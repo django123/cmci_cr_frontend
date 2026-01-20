@@ -1,0 +1,22 @@
+/**
+ * DTO de requête pour créer un Compte Rendu
+ */
+export interface CreateCompteRenduRequestDTO {
+  date: string;
+  rdqd: string;
+  priereSeuleMinutes: number;
+  priereCoupleMinutes?: number;
+  priereAvecEnfantsMinutes?: number;
+  lectureBiblique?: number;
+  livreBiblique?: string;
+  litteraturePages?: number;
+  litteratureTotal?: number;
+  litteratureTitre?: string;
+  priereAutres?: number;
+  confession?: boolean;
+  jeune?: boolean;
+  typeJeune?: string;
+  evangelisation?: number;
+  offrande?: boolean;
+  notes?: string;
+}
