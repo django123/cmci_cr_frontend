@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { RippleModule } from 'primeng/ripple';
 import { DividerModule } from 'primeng/divider';
+import { KeycloakService } from 'keycloak-angular';
 
 @Component({
   selector: 'app-login',
@@ -33,9 +34,9 @@ import { DividerModule } from 'primeng/divider';
             <span class="logo-text">CMCI CR</span>
           </div>
           <h1>Bienvenue</h1>
-          <p>Connectez-vous pour accéder à votre espace de transcription et d'analyse intelligente.</p>
+          <p>Connectez-vous pour accéder à votre espace de compte rendu.</p>
         </div>
-        <div class="features-preview">
+       <!-- <div class="features-preview">
           <div class="feature-item">
             <i class="pi pi-microphone"></i>
             <span>Transcription automatique</span>
@@ -48,7 +49,7 @@ import { DividerModule } from 'primeng/divider';
             <i class="pi pi-share-alt"></i>
             <span>Partage collaboratif</span>
           </div>
-        </div>
+        </div>-->
       </div>
 
       <div class="login-right">
@@ -110,11 +111,11 @@ import { DividerModule } from 'primeng/divider';
           </p-divider>
 
           <div class="social-login">
-            <button class="social-btn google" pRipple>
+            <button class="social-btn google" pRipple (click)="onSocialLogin('google')">
               <i class="pi pi-google"></i>
               <span>Google</span>
             </button>
-            <button class="social-btn microsoft" pRipple>
+            <button class="social-btn microsoft" pRipple (click)="onSocialLogin('microsoft')">
               <i class="pi pi-microsoft"></i>
               <span>Microsoft</span>
             </button>
@@ -436,19 +437,36 @@ import { DividerModule } from 'primeng/divider';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
+  private readonly keycloak = inject(KeycloakService);
+  private readonly router = inject(Router);
+
   email = '';
   password = '';
   rememberMe = false;
   isLoading = false;
 
-  constructor(private router: Router) {}
+  ngOnInit(): void {
+    // Si déjà connecté, rediriger vers le dashboard
+    if (this.keycloak.isLoggedIn()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
 
   onLogin(): void {
     this.isLoading = true;
-    setTimeout(() => {
-      this.isLoading = false;
-      this.router.navigate(['/dashboard']);
-    }, 1500);
+    // Rediriger vers Keycloak pour l'authentification
+    this.keycloak.login({
+      redirectUri: window.location.origin + '/dashboard'
+    });
+  }
+
+  onSocialLogin(provider: 'google' | 'microsoft'): void {
+    this.isLoading = true;
+    // Keycloak peut être configuré pour utiliser des identity providers (Google, Microsoft)
+    this.keycloak.login({
+      redirectUri: window.location.origin + '/dashboard',
+      idpHint: provider
+    });
   }
 }

@@ -22,47 +22,46 @@ export class AuthGuard extends KeycloakAuthGuard {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Promise<boolean> {
-    // Vérifier si Keycloak est initialisé
-    const keycloakInstance = this.keycloak.getKeycloakInstance();
-    if (!keycloakInstance || !keycloakInstance.authenticated) {
-      // Mode dégradé: rediriger vers la page de login locale
-      if (!this.keycloak.isLoggedIn()) {
+    try {
+      // Vérifier si Keycloak est initialisé et fonctionnel
+      const keycloakInstance = this.keycloak.getKeycloakInstance();
+
+      // Si Keycloak n'est pas disponible, rediriger vers login local
+      if (!keycloakInstance) {
+        console.warn('Keycloak non disponible, redirection vers login local');
         this.router.navigate(['/auth/login']);
         return false;
       }
-    }
 
-    // Si l'utilisateur n'est pas authentifié, rediriger vers login Keycloak
-    if (!this.authenticated) {
-      try {
-        await this.keycloak.login({
-          redirectUri: window.location.origin + state.url
-        });
-      } catch (e) {
-        // Si Keycloak échoue, rediriger vers login local
+      // Si l'utilisateur n'est pas authentifié
+      if (!this.authenticated) {
+        // Rediriger vers la page de login locale
         this.router.navigate(['/auth/login']);
+        return false;
       }
-      return false;
-    }
 
-    // Vérifier les rôles requis si spécifiés dans la route
-    const requiredRoles = route.data['roles'] as string[];
+      // Vérifier les rôles requis si spécifiés dans la route
+      const requiredRoles = route.data['roles'] as string[];
 
-    if (!requiredRoles || requiredRoles.length === 0) {
+      if (!requiredRoles || requiredRoles.length === 0) {
+        return true;
+      }
+
+      // Vérifier si l'utilisateur a au moins un des rôles requis
+      const hasRequiredRole = requiredRoles.some(role =>
+        this.roles.includes(role) || this.roles.includes(role.toLowerCase())
+      );
+
+      if (!hasRequiredRole) {
+        this.router.navigate(['/dashboard']);
+        return false;
+      }
+
       return true;
-    }
-
-    // Vérifier si l'utilisateur a au moins un des rôles requis
-    const hasRequiredRole = requiredRoles.some(role =>
-      this.roles.includes(role) || this.roles.includes(role.toLowerCase())
-    );
-
-    if (!hasRequiredRole) {
-      // Rediriger vers une page d'accès refusé ou dashboard
-      this.router.navigate(['/dashboard']);
+    } catch (error) {
+      console.error('Erreur AuthGuard:', error);
+      this.router.navigate(['/auth/login']);
       return false;
     }
-
-    return true;
   }
 }

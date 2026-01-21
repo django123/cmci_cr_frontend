@@ -10,13 +10,14 @@ export interface KeycloakConfig {
 }
 
 export const keycloakConfig: KeycloakConfig = {
-  url: 'http://localhost:8080',
+  url: 'http://localhost:8180',
   realm: 'cmci',
   clientId: 'cmci-cr-frontend'
 };
 
 /**
  * Options d'initialisation Keycloak
+ * Note: onLoad: 'check-sso' désactivé pour éviter les erreurs CSP en dev
  */
 export const keycloakInitOptions: KeycloakOptions = {
   config: {
@@ -25,11 +26,11 @@ export const keycloakInitOptions: KeycloakOptions = {
     clientId: keycloakConfig.clientId
   },
   initOptions: {
-    onLoad: 'check-sso',
-    silentCheckSsoRedirectUri: window.location.origin + '/assets/silent-check-sso.html',
-    checkLoginIframe: false
+    onLoad: undefined, // Ne pas forcer la connexion au démarrage
+    checkLoginIframe: false,
+    enableLogging: true
   },
   enableBearerInterceptor: true,
   bearerPrefix: 'Bearer',
-  bearerExcludedUrls: ['/assets']
+  bearerExcludedUrls: ['/assets', '/public']
 };
