@@ -65,6 +65,12 @@ export const routes: Routes = [
           .then(m => m.DashboardComponent),
         data: { roles: [Role.ADMIN] }
       },
+      // Profil utilisateur
+      {
+        path: 'profile',
+        loadComponent: () => import('./presentation/pages/profile/profile.component')
+          .then(m => m.ProfileComponent)
+      },
       // Paramètres
       {
         path: 'settings',

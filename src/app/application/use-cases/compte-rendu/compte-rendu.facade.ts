@@ -58,12 +58,72 @@ export class CompteRenduFacade {
     this.errorSubject.next(null);
 
     this.authService.getCurrentUser().pipe(
+      tap(user => console.log('[Facade] Current user:', user.id, user.email, user.role)),
       switchMap(user => this.repository.getByUserId(user.id)),
       tap(crs => {
+        console.log('[Facade] Loaded CRs:', crs.length);
         this.comptesRendusSubject.next(crs);
         this.loadingSubject.next(false);
       }),
       catchError(error => {
+        console.error('[Facade] Error loading CRs:', error);
+        this.errorSubject.next(error.message);
+        this.loadingSubject.next(false);
+        throw error;
+      })
+    ).subscribe();
+  }
+
+  /**
+   * Charge les comptes rendus d'un utilisateur spécifique
+   * Utilisé par les admin/FD/leader pour voir les CR d'autres utilisateurs
+   */
+  loadCompteRendusForUser(utilisateurId: string): void {
+    this.loadingSubject.next(true);
+    this.errorSubject.next(null);
+
+    console.log('[Facade] Loading CRs for user:', utilisateurId);
+    this.repository.getByUserId(utilisateurId).pipe(
+      tap(crs => {
+        console.log('[Facade] Loaded CRs for user:', crs.length);
+        this.comptesRendusSubject.next(crs);
+        this.loadingSubject.next(false);
+      }),
+      catchError(error => {
+        console.error('[Facade] Error loading CRs for user:', error);
+        this.errorSubject.next(error.message);
+        this.loadingSubject.next(false);
+        throw error;
+      })
+    ).subscribe();
+  }
+
+  /**
+   * Charge les comptes rendus de plusieurs utilisateurs
+   * Utilisé par les admin/FD/leader pour voir les CR de leurs supervisés
+   */
+  loadCompteRendusForUsers(utilisateurIds: string[]): void {
+    if (utilisateurIds.length === 0) {
+      this.comptesRendusSubject.next([]);
+      return;
+    }
+
+    this.loadingSubject.next(true);
+    this.errorSubject.next(null);
+
+    console.log('[Facade] Loading CRs for users:', utilisateurIds);
+
+    // Charge les CR de tous les utilisateurs en parallèle
+    const requests = utilisateurIds.map(id => this.repository.getByUserId(id));
+    combineLatest(requests).pipe(
+      map(results => results.flat()),
+      tap(crs => {
+        console.log('[Facade] Loaded CRs for all users:', crs.length);
+        this.comptesRendusSubject.next(crs);
+        this.loadingSubject.next(false);
+      }),
+      catchError(error => {
+        console.error('[Facade] Error loading CRs for users:', error);
         this.errorSubject.next(error.message);
         this.loadingSubject.next(false);
         throw error;

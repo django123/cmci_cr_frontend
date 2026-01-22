@@ -12,7 +12,7 @@ export interface ApiConfig {
 export const API_CONFIG = new InjectionToken<ApiConfig>('API_CONFIG');
 
 export const defaultApiConfig: ApiConfig = {
-  baseUrl: 'http://localhost:8081/api',
+  baseUrl: '/api',
   apiVersion: 'v1',
   timeout: 30000
 };

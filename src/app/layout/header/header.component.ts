@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
@@ -10,6 +11,8 @@ import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { RippleModule } from 'primeng/ripple';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { AuthService } from '../../infrastructure/auth/auth.service';
+import { Utilisateur } from '../../domain/models';
 
 @Component({
   selector: 'app-header',
@@ -17,6 +20,7 @@ import { InputIconModule } from 'primeng/inputicon';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     InputTextModule,
     ButtonModule,
     AvatarModule,
@@ -119,31 +123,28 @@ import { InputIconModule } from 'primeng/inputicon';
       <p-overlayPanel #userPanel styleClass="user-panel">
         <div class="user-panel-header">
           <p-avatar
-            icon="pi pi-user"
+            [label]="currentUser ? (currentUser.prenom?.charAt(0) || '') + (currentUser.nom?.charAt(0) || '') : ''"
+            [image]="currentUser?.avatarUrl || ''"
             size="large"
             shape="circle"
             styleClass="user-avatar-large">
           </p-avatar>
           <div class="user-panel-info">
-            <span class="user-panel-name">Administrateur</span>
-            <span class="user-panel-email">admin&#64;cmci.com</span>
+            <span class="user-panel-name">{{ currentUser?.prenom }} {{ currentUser?.nom }}</span>
+            <span class="user-panel-email">{{ currentUser?.email }}</span>
           </div>
         </div>
         <div class="user-panel-menu">
-          <a class="user-panel-item" pRipple>
+          <a class="user-panel-item" routerLink="/profile" pRipple (click)="userPanel.hide()">
             <i class="pi pi-user"></i>
             <span>Mon profil</span>
           </a>
-          <a class="user-panel-item" pRipple>
+          <a class="user-panel-item" routerLink="/settings" pRipple (click)="userPanel.hide()">
             <i class="pi pi-cog"></i>
             <span>Paramètres</span>
           </a>
-          <a class="user-panel-item" pRipple>
-            <i class="pi pi-credit-card"></i>
-            <span>Abonnement</span>
-          </a>
           <div class="panel-separator"></div>
-          <a class="user-panel-item logout" pRipple>
+          <a class="user-panel-item logout" pRipple (click)="onLogout()">
             <i class="pi pi-sign-out"></i>
             <span>Déconnexion</span>
           </a>
@@ -497,11 +498,15 @@ import { InputIconModule } from 'primeng/inputicon';
     }
   `]
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   @Output() newTranscription = new EventEmitter<void>();
+
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   searchQuery = '';
   isDarkMode = false;
+  currentUser: Utilisateur | null = null;
 
   notifications = [
     {
@@ -530,6 +535,20 @@ export class HeaderComponent {
     }
   ];
 
+  ngOnInit(): void {
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+    });
+
+    // Charger l'utilisateur si pas déjà chargé
+    if (!this.currentUser) {
+      this.authService.getCurrentUser().subscribe({
+        next: (user) => this.currentUser = user,
+        error: (err) => console.error('Erreur chargement utilisateur:', err)
+      });
+    }
+  }
+
   onNewTranscription(): void {
     this.newTranscription.emit();
   }
@@ -537,5 +556,9 @@ export class HeaderComponent {
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     document.body.classList.toggle('dark-mode', this.isDarkMode);
+  }
+
+  onLogout(): void {
+    this.authService.logout();
   }
 }

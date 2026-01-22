@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { KeycloakService } from 'keycloak-angular';
-import { Observable, from, of, BehaviorSubject } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { Observable, of, BehaviorSubject } from 'rxjs';
 import { AuthRepository } from '../../domain/repositories';
 import { Utilisateur } from '../../domain/models';
 import { Role, StatutUtilisateur } from '../../domain/enums';
@@ -24,13 +23,53 @@ export class AuthService extends AuthRepository {
       return of(this.currentUserSubject.value);
     }
 
-    return from(this.keycloak.loadUserProfile()).pipe(
-      map(profile => this.mapKeycloakProfileToUtilisateur(profile)),
-      tap(user => this.currentUserSubject.next(user)),
-      catchError(() => {
-        throw new Error('Impossible de charger le profil utilisateur');
-      })
-    );
+    // Utiliser directement les données du token (évite les appels CORS)
+    const user = this.getUserFromToken();
+    if (user) {
+      console.log('[AuthService] User from token:', user.id, user.email, user.role);
+      this.currentUserSubject.next(user);
+      return of(user);
+    }
+
+    throw new Error('Impossible de charger le profil utilisateur depuis le token');
+  }
+
+  /**
+   * Extrait les informations utilisateur directement du token JWT
+   * Évite les problèmes CORS avec l'endpoint /account de Keycloak
+   */
+  private getUserFromToken(): Utilisateur | null {
+    const tokenParsed = this.keycloak.getKeycloakInstance().tokenParsed;
+
+    if (!tokenParsed) {
+      console.error('[AuthService] No token parsed available');
+      return null;
+    }
+
+    console.log('[AuthService] Token parsed:', tokenParsed);
+
+    const roles = this.keycloak.getUserRoles();
+    const role = this.determineHighestRole(roles);
+
+    // user_id vient de notre mapper Keycloak configuré
+    const userId = tokenParsed['user_id'] || tokenParsed.sub || '';
+
+    return {
+      id: userId,
+      email: tokenParsed['email'] || '',
+      nom: tokenParsed['family_name'] || tokenParsed['preferred_username'] || '',
+      prenom: tokenParsed['given_name'] || '',
+      role: role,
+      egliseMaisonId: tokenParsed['eglise_maison_id'],
+      fdId: tokenParsed['fd_id'],
+      avatarUrl: tokenParsed['avatar_url'],
+      telephone: tokenParsed['telephone'],
+      dateNaissance: tokenParsed['date_naissance'] ? new Date(tokenParsed['date_naissance']) : undefined,
+      dateBapteme: tokenParsed['date_bapteme'] ? new Date(tokenParsed['date_bapteme']) : undefined,
+      statut: StatutUtilisateur.ACTIF,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 
   isAuthenticated(): Observable<boolean> {
@@ -38,9 +77,12 @@ export class AuthService extends AuthRepository {
   }
 
   getToken(): Observable<string | null> {
-    return from(this.keycloak.getToken()).pipe(
-      catchError(() => of(null))
-    );
+    try {
+      const token = this.keycloak.getKeycloakInstance().token;
+      return of(token || null);
+    } catch {
+      return of(null);
+    }
   }
 
   login(): void {
@@ -53,13 +95,16 @@ export class AuthService extends AuthRepository {
   }
 
   refreshToken(): Observable<string> {
-    return from(this.keycloak.updateToken(30)).pipe(
-      map(() => this.keycloak.getKeycloakInstance().token || ''),
-      catchError(() => {
+    return new Observable(observer => {
+      this.keycloak.updateToken(30).then(() => {
+        const token = this.keycloak.getKeycloakInstance().token || '';
+        observer.next(token);
+        observer.complete();
+      }).catch(() => {
         this.logout();
-        throw new Error('Session expirée');
-      })
-    );
+        observer.error(new Error('Session expirée'));
+      });
+    });
   }
 
   /**
@@ -82,32 +127,6 @@ export class AuthService extends AuthRepository {
   hasAnyRole(roles: string[]): boolean {
     const userRoles = this.keycloak.getUserRoles();
     return roles.some(role => userRoles.includes(role));
-  }
-
-  /**
-   * Mappe le profil Keycloak vers le modèle Utilisateur du domaine
-   */
-  private mapKeycloakProfileToUtilisateur(profile: Keycloak.KeycloakProfile): Utilisateur {
-    const roles = this.keycloak.getUserRoles();
-    const role = this.determineHighestRole(roles);
-    const tokenParsed = this.keycloak.getKeycloakInstance().tokenParsed;
-
-    return {
-      id: profile.id || tokenParsed?.sub || '',
-      email: profile.email || '',
-      nom: profile.lastName || '',
-      prenom: profile.firstName || '',
-      role: role,
-      egliseMaisonId: tokenParsed?.['eglise_maison_id'],
-      fdId: tokenParsed?.['fd_id'],
-      avatarUrl: tokenParsed?.['avatar_url'],
-      telephone: tokenParsed?.['telephone'],
-      dateNaissance: tokenParsed?.['date_naissance'] ? new Date(tokenParsed['date_naissance']) : undefined,
-      dateBapteme: tokenParsed?.['date_bapteme'] ? new Date(tokenParsed['date_bapteme']) : undefined,
-      statut: StatutUtilisateur.ACTIF,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
   }
 
   /**

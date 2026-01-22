@@ -13,7 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CompteRenduFacade } from '../../application/use-cases';
 import { AuthService } from '../../infrastructure/auth';
 import { CompteRendu } from '../../domain/models';
-import { StatutCR } from '../../domain/enums';
+import { StatutCR, Role, canViewOthersCR } from '../../domain/enums';
 
 interface StatCard {
   title: string;
@@ -810,7 +810,27 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.crFacade.loadMyCompteRendus();
+    // Charger selon le rôle de l'utilisateur
+    this.authService.getCurrentUser().subscribe({
+      next: (user) => {
+        console.log('[Dashboard] User role:', user.role, 'User ID:', user.id);
+
+        if (canViewOthersCR(user.role)) {
+          // Admin/FD/Leader/Pasteur: charger les CR des fidèles supervisés
+          // Pour l'instant, on charge les CR des utilisateurs connus de la BD
+          const supervisedUserIds = this.getSupervisedUserIds(user.role);
+          console.log('[Dashboard] Loading CRs for supervised users:', supervisedUserIds);
+          this.crFacade.loadCompteRendusForUsers(supervisedUserIds);
+        } else {
+          // Fidèle: charger uniquement ses propres CR
+          this.crFacade.loadMyCompteRendus();
+        }
+      },
+      error: (err) => {
+        console.error('[Dashboard] Error getting user:', err);
+        this.crFacade.loadMyCompteRendus();
+      }
+    });
 
     this.crFacade.comptesRendus$.subscribe(crs => {
       this.recentCRs = [...crs]
@@ -821,6 +841,34 @@ export class DashboardComponent implements OnInit {
       this.checkTodayCR(crs);
       this.updateChart(crs);
     });
+  }
+
+  /**
+   * Retourne les IDs des utilisateurs supervisés selon le rôle
+   * Basé sur les données seed de la BD
+   */
+  private getSupervisedUserIds(role: Role): string[] {
+    // IDs des fidèles de la BD (V2__seed_data.sql)
+    const allFideles = [
+      'd1000000-0000-0000-0000-000000000030', // Paul FIDELE (fidele@cmci.org)
+      'd1000000-0000-0000-0000-000000000031', // Antoine LAMBERT
+      'd1000000-0000-0000-0000-000000000032', // Julie DUBOIS
+      'd1000000-0000-0000-0000-000000000033', // Lucas MARTINEZ
+      'd1000000-0000-0000-0000-000000000034', // Emma GARCIA
+      'd1000000-0000-0000-0000-000000000035', // Nathan THOMAS
+      'd1000000-0000-0000-0000-000000000036', // Camille FAURE (Lyon)
+      'd1000000-0000-0000-0000-000000000037', // David FOTSO (Douala)
+      'd1000000-0000-0000-0000-000000000038', // Esther TAMBA (Douala)
+    ];
+
+    // Admin voit tous les fidèles
+    if (role === Role.ADMIN || role === Role.PASTEUR) {
+      return allFideles;
+    }
+
+    // FD/Leader voient les fidèles de leur église de maison
+    // Pour simplifier, on retourne tous les fidèles pour l'instant
+    return allFideles;
   }
 
   private calculateStats(crs: CompteRendu[]): void {
