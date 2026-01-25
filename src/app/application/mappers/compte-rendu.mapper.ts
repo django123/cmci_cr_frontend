@@ -16,12 +16,13 @@ export class CompteRenduMapper {
    * Convertit un DTO de réponse en modèle du domaine
    */
   toDomain(dto: CompteRenduResponseDTO): CompteRendu {
+    console.log('[Mapper] Converting DTO to domain:', JSON.stringify(dto));
     return {
       id: dto.id,
       utilisateurId: dto.utilisateurId,
       date: new Date(dto.date),
-      rdqd: dto.rdqd,
-      priereSeule: dto.priereSeule,
+      rdqd: dto.rdqd || '',
+      priereSeule: dto.priereSeule || '',
       priereCouple: dto.priereCouple,
       priereAvecEnfants: dto.priereAvecEnfants,
       priereAutres: dto.priereAutres,
