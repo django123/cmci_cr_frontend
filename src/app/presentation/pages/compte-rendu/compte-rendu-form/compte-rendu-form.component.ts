@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -57,15 +57,15 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
             type="button"
             label="Annuler"
             icon="pi pi-times"
-            class="p-button-outlined p-button-secondary"
+            class="btn-cancel"
             (click)="goBack()">
           </button>
           <button
             pButton
             type="submit"
             [label]="isEditMode ? 'Mettre à jour' : 'Enregistrer'"
-            icon="pi pi-check"
-            class="p-button-primary"
+            icon="pi pi-save"
+            class="btn-save"
             [loading]="loading"
             [disabled]="form.invalid"
             (click)="onSubmit()">
@@ -102,38 +102,38 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
 
               <div class="field">
                 <label>RDQD (Rendez-vous Quotidien avec Dieu) <span class="required">*</span></label>
-                <div class="rdqd-container">
-                  <div class="rdqd-input-group">
-                    <p-inputNumber
-                      formControlName="rdqdAccompli"
-                      [min]="0"
-                      [max]="7"
-                      [showButtons]="true"
-                      buttonLayout="horizontal"
-                      spinnerMode="horizontal"
-                      decrementButtonClass="p-button-secondary"
-                      incrementButtonClass="p-button-secondary"
-                      incrementButtonIcon="pi pi-plus"
-                      decrementButtonIcon="pi pi-minus"
-                      styleClass="rdqd-number">
-                    </p-inputNumber>
-                    <span class="rdqd-divider">/</span>
-                    <p-inputNumber
-                      formControlName="rdqdAttendu"
-                      [min]="1"
-                      [max]="7"
-                      [showButtons]="true"
-                      buttonLayout="horizontal"
-                      spinnerMode="horizontal"
-                      decrementButtonClass="p-button-secondary"
-                      incrementButtonClass="p-button-secondary"
-                      incrementButtonIcon="pi pi-plus"
-                      decrementButtonIcon="pi pi-minus"
-                      styleClass="rdqd-number">
-                    </p-inputNumber>
+                <div class="rdqd-wrapper">
+                  <div class="rdqd-input-box">
+                    <button type="button" class="rdqd-btn decrement" (click)="decrementRdqdAccompli()" [disabled]="form.get('rdqdAccompli')?.value <= 0">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <div class="rdqd-value">
+                      <span class="rdqd-number-display">{{ form.get('rdqdAccompli')?.value }}</span>
+                      <span class="rdqd-label">Accompli</span>
+                    </div>
+                    <button type="button" class="rdqd-btn increment" (click)="incrementRdqdAccompli()" [disabled]="form.get('rdqdAccompli')?.value >= form.get('rdqdAttendu')?.value">
+                      <i class="pi pi-plus"></i>
+                    </button>
                   </div>
-                  <small class="hint-text">Nombre de rendez-vous accomplis / attendus</small>
+
+                  <div class="rdqd-separator">
+                    <span>/</span>
+                  </div>
+
+                  <div class="rdqd-input-box">
+                    <button type="button" class="rdqd-btn decrement" (click)="decrementRdqdAttendu()" [disabled]="form.get('rdqdAttendu')?.value <= 1 || form.get('rdqdAttendu')?.value <= form.get('rdqdAccompli')?.value">
+                      <i class="pi pi-minus"></i>
+                    </button>
+                    <div class="rdqd-value">
+                      <span class="rdqd-number-display">{{ form.get('rdqdAttendu')?.value }}</span>
+                      <span class="rdqd-label">Attendu</span>
+                    </div>
+                    <button type="button" class="rdqd-btn increment" (click)="incrementRdqdAttendu()" [disabled]="form.get('rdqdAttendu')?.value >= 7">
+                      <i class="pi pi-plus"></i>
+                    </button>
+                  </div>
                 </div>
+                <small class="hint-text">Nombre de rendez-vous accomplis / attendus (max 7)</small>
               </div>
             </div>
           </div>
@@ -378,15 +378,15 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
             type="button"
             label="Annuler"
             icon="pi pi-times"
-            class="p-button-outlined p-button-secondary p-button-lg"
+            class="btn-cancel-mobile"
             (click)="goBack()">
           </button>
           <button
             pButton
             type="submit"
             [label]="isEditMode ? 'Mettre à jour' : 'Enregistrer'"
-            icon="pi pi-check"
-            class="p-button-primary p-button-lg"
+            icon="pi pi-save"
+            class="btn-save-mobile"
             [loading]="loading"
             [disabled]="form.invalid"
             (click)="onSubmit()">
@@ -409,12 +409,13 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem 2rem;
+      padding: 1.25rem 2rem;
       background: white;
       border-bottom: 1px solid #e2e8f0;
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .header-left {
@@ -423,22 +424,104 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
       gap: 1rem;
     }
 
+    .header-left ::ng-deep .p-button-rounded {
+      width: 42px;
+      height: 42px;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+
+    .header-left ::ng-deep .p-button-rounded:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    .header-left ::ng-deep .p-button-rounded .p-button-icon {
+      font-size: 1rem;
+    }
+
     .header-title h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.375rem;
       font-weight: 700;
       color: #1e293b;
+      letter-spacing: -0.02em;
     }
 
     .header-title p {
       margin: 0.25rem 0 0;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       color: #64748b;
     }
 
     .header-actions {
       display: flex;
-      gap: 0.75rem;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Header Buttons */
+    .header-actions ::ng-deep .btn-cancel {
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: 10px;
+      height: 44px;
+      min-width: 120px;
+      transition: all 0.2s ease;
+    }
+
+    .header-actions ::ng-deep .btn-cancel:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    .header-actions ::ng-deep .btn-cancel .p-button-icon {
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+    }
+
+    .header-actions ::ng-deep .btn-save {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      padding: 0.625rem 1.5rem;
+      border-radius: 10px;
+      height: 44px;
+      min-width: 140px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .header-actions ::ng-deep .btn-save:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .header-actions ::ng-deep .btn-save:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .header-actions ::ng-deep .btn-save .p-button-icon {
+      font-size: 1rem;
+      margin-right: 0.5rem;
+    }
+
+    .header-actions ::ng-deep .p-button .p-button-label {
+      font-weight: 600;
     }
 
     /* Form Content */
@@ -541,29 +624,102 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
     }
 
     /* RDQD Styles */
-    .rdqd-container {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .rdqd-input-group {
+    .rdqd-wrapper {
       display: flex;
       align-items: center;
       gap: 1rem;
       background: #f8fafc;
-      padding: 1rem;
+      padding: 1rem 1.25rem;
       border-radius: 12px;
       border: 1px solid #e2e8f0;
     }
 
-    .rdqd-divider {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #6366f1;
+    .rdqd-input-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      padding: 0.5rem;
     }
 
-    ::ng-deep .rdqd-number {
-      width: 120px;
+    .rdqd-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      i {
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+
+      &.decrement {
+        background: #fee2e2;
+        color: #dc2626;
+
+        &:hover:not(:disabled) {
+          background: #fecaca;
+        }
+      }
+
+      &.increment {
+        background: #dcfce7;
+        color: #16a34a;
+
+        &:hover:not(:disabled) {
+          background: #bbf7d0;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+
+    .rdqd-value {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 60px;
+    }
+
+    .rdqd-number-display {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1;
+    }
+
+    .rdqd-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 0.25rem;
+    }
+
+    .rdqd-separator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      span {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #6366f1;
+      }
     }
 
     /* Checkbox Group */
@@ -674,10 +830,43 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
       border-top: 1px solid #e2e8f0;
       gap: 1rem;
       z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     }
 
-    .mobile-actions button {
+    .mobile-actions ::ng-deep .btn-cancel-mobile {
       flex: 1;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.875rem 1rem;
+      border-radius: 12px;
+      height: 52px;
+    }
+
+    .mobile-actions ::ng-deep .btn-cancel-mobile:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .mobile-actions ::ng-deep .btn-save-mobile {
+      flex: 1.2;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.875rem 1rem;
+      border-radius: 12px;
+      height: 52px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .mobile-actions ::ng-deep .btn-save-mobile:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      box-shadow: none;
     }
 
     /* Responsive */
@@ -718,23 +907,40 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
         grid-template-columns: 1fr;
       }
 
-      .rdqd-input-group {
+      .rdqd-wrapper {
         flex-direction: column;
         gap: 0.75rem;
+        padding: 1rem;
       }
 
-      ::ng-deep .rdqd-number {
+      .rdqd-input-box {
         width: 100%;
+        justify-content: space-between;
+        padding: 0.75rem;
+      }
+
+      .rdqd-separator {
+        transform: rotate(90deg);
+
+        span {
+          font-size: 1.25rem;
+        }
+      }
+
+      .rdqd-btn {
+        width: 44px;
+        height: 44px;
       }
     }
   `]
 })
-export class CompteRenduFormComponent implements OnInit {
+export class CompteRenduFormComponent implements OnInit, AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly facade = inject(CompteRenduFacade);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   form!: FormGroup;
   isEditMode = false;
@@ -750,6 +956,14 @@ export class CompteRenduFormComponent implements OnInit {
       this.isEditMode = true;
       this.loadCompteRendu();
     }
+  }
+
+  ngAfterViewInit(): void {
+    // Force layout recalculation after view is initialized
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private initForm(): void {
@@ -917,5 +1131,36 @@ export class CompteRenduFormComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/compte-rendu']);
+  }
+
+  // RDQD control methods
+  incrementRdqdAccompli(): void {
+    const current = this.form.get('rdqdAccompli')?.value || 0;
+    const max = this.form.get('rdqdAttendu')?.value || 7;
+    if (current < max) {
+      this.form.patchValue({ rdqdAccompli: current + 1 });
+    }
+  }
+
+  decrementRdqdAccompli(): void {
+    const current = this.form.get('rdqdAccompli')?.value || 0;
+    if (current > 0) {
+      this.form.patchValue({ rdqdAccompli: current - 1 });
+    }
+  }
+
+  incrementRdqdAttendu(): void {
+    const current = this.form.get('rdqdAttendu')?.value || 1;
+    if (current < 7) {
+      this.form.patchValue({ rdqdAttendu: current + 1 });
+    }
+  }
+
+  decrementRdqdAttendu(): void {
+    const current = this.form.get('rdqdAttendu')?.value || 1;
+    const accompli = this.form.get('rdqdAccompli')?.value || 0;
+    if (current > 1 && current > accompli) {
+      this.form.patchValue({ rdqdAttendu: current - 1 });
+    }
   }
 }

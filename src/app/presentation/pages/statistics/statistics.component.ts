@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -40,20 +40,27 @@ import { tap } from 'rxjs/operators';
             placeholder="Sélectionner une période"
             dateFormat="dd/mm/yy"
             [showIcon]="true"
-            (onSelect)="onPeriodChange()">
+            (onSelect)="onPeriodChange()"
+            styleClass="period-calendar">
           </p-calendar>
-          <button
-            pButton
-            label="Ce mois"
-            class="p-button-outlined p-button-sm"
-            (click)="loadCurrentMonth()">
-          </button>
-          <button
-            pButton
-            label="Cette semaine"
-            class="p-button-outlined p-button-sm"
-            (click)="loadCurrentWeek()">
-          </button>
+          <div class="period-buttons">
+            <button
+              type="button"
+              class="period-btn"
+              [class.active]="activePeriod === 'month'"
+              (click)="loadCurrentMonth()">
+              <i class="pi pi-calendar"></i>
+              Ce mois
+            </button>
+            <button
+              type="button"
+              class="period-btn"
+              [class.active]="activePeriod === 'week'"
+              (click)="loadCurrentWeek()">
+              <i class="pi pi-calendar-minus"></i>
+              Cette semaine
+            </button>
+          </div>
         </div>
       </div>
 
@@ -228,8 +235,73 @@ import { tap } from 'rxjs/operators';
 
     .period-selector {
       display: flex;
-      gap: 0.75rem;
+      gap: 1rem;
       align-items: center;
+    }
+
+    ::ng-deep .period-calendar {
+      .p-inputtext {
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        min-width: 200px;
+
+        &:focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+      }
+
+      .p-datepicker-trigger {
+        background: transparent;
+        border: none;
+        color: #6b7280;
+
+        &:hover {
+          background: #f3f4f6;
+          color: #6366f1;
+        }
+      }
+    }
+
+    .period-buttons {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .period-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+
+      i {
+        font-size: 0.875rem;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.7);
+        color: #374151;
+      }
+
+      &.active {
+        background: white;
+        color: #6366f1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
     }
 
     .stats-grid {
@@ -518,6 +590,26 @@ import { tap } from 'rxjs/operators';
       }
     }
 
+    @media (max-width: 768px) {
+      .period-selector {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+      }
+
+      ::ng-deep .period-calendar {
+        width: 100%;
+
+        .p-inputtext {
+          width: 100%;
+        }
+      }
+
+      .period-buttons {
+        justify-content: center;
+      }
+    }
+
     @media (max-width: 640px) {
       .stats-grid {
         grid-template-columns: 1fr;
@@ -526,26 +618,53 @@ import { tap } from 'rxjs/operators';
       .study-stats {
         grid-template-columns: 1fr;
       }
+
+      .period-buttons {
+        flex-direction: column;
+      }
+
+      .period-btn {
+        justify-content: center;
+      }
     }
   `]
 })
-export class StatisticsComponent implements OnInit {
+export class StatisticsComponent implements OnInit, AfterViewInit {
   private readonly facade = inject(StatisticsFacade);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   statistics$ = this.facade.statistics$;
   loading$ = this.facade.loading$;
   currentStats: Statistics | null = null;
 
   dateRange: Date[] = [];
+  activePeriod: 'month' | 'week' | 'custom' = 'month';
+  isViewReady = false;
 
   ngOnInit(): void {
     this.statistics$.subscribe(stats => {
       this.currentStats = stats;
+      // Force change detection and resize when data arrives
+      this.cdr.detectChanges();
+      window.dispatchEvent(new Event('resize'));
     });
     this.loadCurrentMonth();
   }
 
+  ngAfterViewInit(): void {
+    // Force a layout recalculation after view init
+    this.isViewReady = true;
+    this.cdr.detectChanges();
+    // Dispatch resize to ensure any charts/tables are properly sized
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
   loadCurrentMonth(): void {
+    this.activePeriod = 'month';
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -554,6 +673,7 @@ export class StatisticsComponent implements OnInit {
   }
 
   loadCurrentWeek(): void {
+    this.activePeriod = 'week';
     const now = new Date();
     const dayOfWeek = now.getDay();
     const startDate = new Date(now);
@@ -565,6 +685,7 @@ export class StatisticsComponent implements OnInit {
   }
 
   onPeriodChange(): void {
+    this.activePeriod = 'custom';
     if (this.dateRange && this.dateRange.length === 2) {
       const [startDate, endDate] = this.dateRange;
       this.facade.loadPersonalStatistics(startDate, endDate).subscribe();

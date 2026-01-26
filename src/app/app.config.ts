@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
 import { KeycloakService, KeycloakAngularModule } from 'keycloak-angular';
@@ -17,9 +17,9 @@ import { AuthService } from './infrastructure/auth';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideZoneChangeDetection({ eventCoalescing: false }),
     provideRouter(routes),
-    provideAnimationsAsync(),
+    provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
 
     // PrimeNG Configuration

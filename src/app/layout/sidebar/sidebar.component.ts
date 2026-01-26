@@ -138,6 +138,8 @@ interface MenuItem {
       top: 0;
       z-index: 1000;
       border-right: 1px solid rgba(255, 255, 255, 0.08);
+      will-change: width;
+      transform: translateZ(0); /* Force GPU layer */
 
       &.collapsed {
         width: 80px;

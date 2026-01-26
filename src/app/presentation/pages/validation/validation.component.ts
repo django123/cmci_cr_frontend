@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -10,6 +10,9 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AvatarModule } from 'primeng/avatar';
 import { MessageService, ConfirmationService } from 'primeng/api';
+
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { CompteRenduFacade } from '../../../application/use-cases';
 import { CompteRendu } from '../../../domain/models';
@@ -284,22 +287,43 @@ import { StatutCR } from '../../../domain/enums';
     }
   `]
 })
-export class ValidationComponent implements OnInit {
+export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly facade = inject(CompteRenduFacade);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroy$ = new Subject<void>();
 
+  // State - directly bound properties for immediate rendering
   pendingCRs: CompteRendu[] = [];
   pendingCount = 0;
 
   ngOnInit(): void {
-    this.facade.soumis$.subscribe(crs => {
+    // Subscribe to soumis (submitted) CRs
+    this.facade.soumis$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(crs => {
       this.pendingCRs = crs;
       this.pendingCount = crs.length;
+      this.cdr.detectChanges();
     });
 
+    // Load data
     this.facade.loadMyCompteRendus();
+  }
+
+  ngAfterViewInit(): void {
+    // Force resize after view is initialized
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getRdqdPercentage(rdqd: string): number {

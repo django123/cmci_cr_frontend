@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -9,6 +9,9 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { RippleModule } from 'primeng/ripple';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
+
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { CompteRenduFacade } from '../../application/use-cases';
 import { AuthService } from '../../infrastructure/auth';
@@ -772,10 +775,12 @@ interface StatCard {
     }
   `]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly crFacade = inject(CompteRenduFacade);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroy$ = new Subject<void>();
 
   userName = 'Utilisateur';
   recentCRs: CompteRendu[] = [];
@@ -793,9 +798,22 @@ export class DashboardComponent implements OnInit {
   hasTodayCR = false;
 
   ngOnInit(): void {
+    this.initChart();
     this.loadUserInfo();
     this.loadData();
-    this.initChart();
+  }
+
+  ngAfterViewInit(): void {
+    // Force chart resize after view is initialized
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadUserInfo(): void {
@@ -811,20 +829,20 @@ export class DashboardComponent implements OnInit {
 
   private loadData(): void {
     // Charger selon le rôle de l'utilisateur
-    this.authService.getCurrentUser().subscribe({
+    this.authService.getCurrentUser().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (user) => {
         console.log('[Dashboard] User role:', user.role, 'User ID:', user.id);
 
         if (canViewOthersCR(user.role)) {
-          // Admin/FD/Leader/Pasteur: charger les CR des fidèles supervisés
-          // Pour l'instant, on charge les CR des utilisateurs connus de la BD
           const supervisedUserIds = this.getSupervisedUserIds(user.role);
           console.log('[Dashboard] Loading CRs for supervised users:', supervisedUserIds);
           this.crFacade.loadCompteRendusForUsers(supervisedUserIds);
         } else {
-          // Fidèle: charger uniquement ses propres CR
           this.crFacade.loadMyCompteRendus();
         }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('[Dashboard] Error getting user:', err);
@@ -832,7 +850,9 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    this.crFacade.comptesRendus$.subscribe(crs => {
+    this.crFacade.comptesRendus$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(crs => {
       this.recentCRs = [...crs]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 5);
@@ -840,6 +860,10 @@ export class DashboardComponent implements OnInit {
       this.calculateStats(crs);
       this.checkTodayCR(crs);
       this.updateChart(crs);
+
+      // Force la détection des changements et le resize des graphiques
+      this.cdr.detectChanges();
+      window.dispatchEvent(new Event('resize'));
     });
   }
 
@@ -1016,7 +1040,9 @@ export class DashboardComponent implements OnInit {
     };
 
     this.chartOptions = {
+      responsive: true,
       maintainAspectRatio: false,
+      resizeDelay: 0,
       plugins: {
         legend: {
           display: false

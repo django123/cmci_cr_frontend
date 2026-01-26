@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -15,9 +15,12 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
 
+import { Subject, combineLatest } from 'rxjs';
+import { takeUntil, map, startWith } from 'rxjs/operators';
+
 import { CompteRenduFacade } from '../../../../application/use-cases';
 import { CompteRendu } from '../../../../domain/models';
-import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enums';
+import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
 
 @Component({
   selector: 'app-compte-rendu-list',
@@ -47,54 +50,78 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
           <p>Gérez vos comptes rendus spirituels quotidiens</p>
         </div>
         <button
-          pButton
-          label="Nouveau CR"
-          icon="pi pi-plus"
-          class="p-button-primary"
+          type="button"
+          class="btn-nouveau-cr"
           (click)="createNew()">
+          <i class="pi pi-plus"></i>
+          <span>Nouveau CR</span>
         </button>
       </div>
 
       <!-- Filtres -->
-      <div class="filters-section">
-        <div class="filter-group">
-          <span class="p-input-icon-left">
-            <i class="pi pi-search"></i>
-            <input
-              type="text"
-              pInputText
-              [(ngModel)]="searchTerm"
-              placeholder="Rechercher..."
-              class="search-input" />
-          </span>
+      <div class="filters-bar">
+        <div class="search-box">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="Rechercher par RDQD, notes..."
+            class="search-input" />
+          @if (searchTerm) {
+            <button type="button" class="clear-btn" (click)="searchTerm = ''">
+              <i class="pi pi-times"></i>
+            </button>
+          }
         </div>
 
-        <div class="filter-group">
+        <div class="filter-dropdown">
           <p-dropdown
             [options]="statutOptions"
             [(ngModel)]="selectedStatut"
             placeholder="Tous les statuts"
             [showClear]="true"
-            styleClass="statut-dropdown">
+            styleClass="filter-select">
+            <ng-template pTemplate="selectedItem">
+              @if (selectedStatut) {
+                <div class="status-selected">
+                  <span class="status-dot" [attr.data-status]="selectedStatut"></span>
+                  <span>{{ getStatutLabelFromValue(selectedStatut) }}</span>
+                </div>
+              }
+            </ng-template>
+            <ng-template let-option pTemplate="item">
+              <div class="status-option">
+                <span class="status-dot" [attr.data-status]="option.value"></span>
+                <span>{{ option.label }}</span>
+              </div>
+            </ng-template>
           </p-dropdown>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-calendar">
           <p-calendar
             [(ngModel)]="dateRange"
             selectionMode="range"
             [readonlyInput]="true"
-            placeholder="Période"
+            placeholder="Sélectionner une période"
             dateFormat="dd/mm/yy"
             [showIcon]="true"
-            styleClass="date-filter">
+            [showButtonBar]="true"
+            styleClass="filter-date">
           </p-calendar>
         </div>
+
+        @if (searchTerm || selectedStatut || (dateRange && dateRange.length)) {
+          <button type="button" class="btn-clear-filters" (click)="clearFilters()">
+            <i class="pi pi-filter-slash"></i>
+            <span>Effacer</span>
+          </button>
+        }
       </div>
 
       <!-- Liste des CR -->
       <p-card styleClass="cr-table-card">
-        @if (loading$ | async) {
+        @if (isLoading) {
           <div class="skeleton-container">
             @for (i of [1,2,3,4,5]; track i) {
               <p-skeleton height="60px" styleClass="mb-2"></p-skeleton>
@@ -113,12 +140,43 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
 
             <ng-template pTemplate="header">
               <tr>
-                <th pSortableColumn="date">Date <p-sortIcon field="date"></p-sortIcon></th>
-                <th>RDQD</th>
-                <th>Prière</th>
-                <th>Lecture</th>
-                <th pSortableColumn="statut">Statut <p-sortIcon field="statut"></p-sortIcon></th>
-                <th>Actions</th>
+                <th pSortableColumn="date" style="width: 15%">
+                  <div class="th-content">
+                    <i class="pi pi-calendar"></i>
+                    <span>Date</span>
+                    <p-sortIcon field="date"></p-sortIcon>
+                  </div>
+                </th>
+                <th style="width: 12%">
+                  <div class="th-content">
+                    <i class="pi pi-check-square"></i>
+                    <span>RDQD</span>
+                  </div>
+                </th>
+                <th style="width: 12%">
+                  <div class="th-content">
+                    <i class="pi pi-clock"></i>
+                    <span>Prière</span>
+                  </div>
+                </th>
+                <th style="width: 15%">
+                  <div class="th-content">
+                    <i class="pi pi-book"></i>
+                    <span>Lecture</span>
+                  </div>
+                </th>
+                <th pSortableColumn="statut" style="width: 12%">
+                  <div class="th-content">
+                    <i class="pi pi-tag"></i>
+                    <span>Statut</span>
+                    <p-sortIcon field="statut"></p-sortIcon>
+                  </div>
+                </th>
+                <th style="width: 10%; text-align: right">
+                  <div class="th-content" style="justify-content: flex-end">
+                    <span>Actions</span>
+                  </div>
+                </th>
               </tr>
             </ng-template>
 
@@ -126,7 +184,7 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
               <tr>
                 <td>
                   <div class="date-cell">
-                    <span class="date-value">{{ cr.date | date:'dd/MM/yyyy' }}</span>
+                    <span class="date-value">{{ cr.date | date:'dd MMM yyyy':'':'fr' }}</span>
                     <span class="date-day">{{ cr.date | date:'EEEE':'':'fr' }}</span>
                   </div>
                 </td>
@@ -141,8 +199,19 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
                     </div>
                   </div>
                 </td>
-                <td>{{ cr.priereSeule }}</td>
-                <td>{{ cr.lectureBiblique || 0 }} chapitres</td>
+                <td>
+                  <div class="prayer-cell">
+                    <span>{{ cr.priereSeule || '00:00' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="lecture-cell">
+                    <span class="lecture-icon">
+                      <i class="pi pi-book"></i>
+                    </span>
+                    <span>{{ cr.lectureBiblique || 0 }} chap.</span>
+                  </div>
+                </td>
                 <td>
                   <p-tag
                     [value]="getStatutLabel(cr.statut)"
@@ -154,16 +223,18 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
                     <button
                       pButton
                       icon="pi pi-eye"
-                      class="p-button-text p-button-sm"
+                      class="p-button-text p-button-rounded"
                       pTooltip="Voir"
+                      tooltipPosition="top"
                       (click)="viewCR(cr)">
                     </button>
                     @if (canEdit(cr)) {
                       <button
                         pButton
                         icon="pi pi-pencil"
-                        class="p-button-text p-button-sm"
+                        class="p-button-text p-button-rounded"
                         pTooltip="Modifier"
+                        tooltipPosition="top"
                         (click)="editCR(cr)">
                       </button>
                     }
@@ -171,8 +242,9 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
                       <button
                         pButton
                         icon="pi pi-send"
-                        class="p-button-text p-button-sm p-button-success"
+                        class="p-button-text p-button-rounded p-button-success"
                         pTooltip="Soumettre"
+                        tooltipPosition="top"
                         (click)="submitCR(cr)">
                       </button>
                     }
@@ -180,8 +252,9 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
                       <button
                         pButton
                         icon="pi pi-trash"
-                        class="p-button-text p-button-sm p-button-danger"
+                        class="p-button-text p-button-rounded p-button-danger"
                         pTooltip="Supprimer"
+                        tooltipPosition="top"
                         (click)="confirmDelete(cr)">
                       </button>
                     }
@@ -220,6 +293,7 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
       padding: 0;
     }
 
+    /* Page Header */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -230,38 +304,288 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
     .header-content h1 {
       margin: 0 0 0.25rem;
       font-size: 1.5rem;
-      font-weight: 600;
-      color: #1f2937;
+      font-weight: 700;
+      color: #1e293b;
     }
 
     .header-content p {
       margin: 0;
-      color: #6b7280;
-      font-size: 0.9rem;
+      color: #64748b;
+      font-size: 0.875rem;
     }
 
-    .filters-section {
+    /* Bouton Nouveau CR */
+    .btn-nouveau-cr {
       display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+
+      i {
+        font-size: 0.875rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    /* Filters Bar */
+    .filters-bar {
+      display: flex;
+      align-items: center;
       gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
       margin-bottom: 1.5rem;
       flex-wrap: wrap;
     }
 
-    .filter-group {
+    /* Search Box */
+    .search-box {
+      display: flex;
+      align-items: center;
       flex: 1;
-      min-width: 200px;
+      min-width: 250px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0 1rem;
+      height: 44px;
+      transition: all 0.2s ease;
+
+      &:focus-within {
+        background: white;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+    }
+
+    .search-icon {
+      color: #94a3b8;
+      font-size: 0.9375rem;
+      margin-right: 0.75rem;
+    }
+
+    .search-box:focus-within .search-icon {
+      color: #6366f1;
     }
 
     .search-input {
-      width: 100%;
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.9375rem;
+      color: #1e293b;
+      outline: none;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
     }
 
-    ::ng-deep .statut-dropdown,
-    ::ng-deep .date-filter {
-      width: 100%;
+    .clear-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: #e2e8f0;
+      border-radius: 50%;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      i {
+        font-size: 0.7rem;
+      }
+
+      &:hover {
+        background: #cbd5e1;
+        color: #475569;
+      }
     }
 
+    /* Filter Dropdown & Calendar */
+    .filter-dropdown,
+    .filter-calendar {
+      min-width: 180px;
+    }
+
+    ::ng-deep .filter-select,
+    ::ng-deep .filter-date {
+      width: 100%;
+
+      .p-dropdown,
+      .p-calendar {
+        width: 100%;
+      }
+
+      .p-dropdown {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        height: 44px;
+
+        &:not(.p-disabled):hover {
+          border-color: #cbd5e1;
+        }
+
+        &:not(.p-disabled).p-focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+      }
+
+      .p-dropdown-label {
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+        color: #1e293b;
+
+        &.p-placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .p-dropdown-trigger {
+        width: 2.5rem;
+        color: #64748b;
+      }
+
+      .p-inputtext {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        height: 44px;
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+
+        &:enabled:focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+      }
+
+      .p-datepicker-trigger {
+        background: transparent;
+        border: none;
+        color: #64748b;
+        width: 2.5rem;
+
+        &:hover {
+          background: transparent;
+          color: #6366f1;
+        }
+      }
+    }
+
+    /* Status dot */
+    .status-selected,
+    .status-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      &[data-status="BROUILLON"] {
+        background: #f59e0b;
+      }
+
+      &[data-status="SOUMIS"] {
+        background: #3b82f6;
+      }
+
+      &[data-status="VALIDE"] {
+        background: #22c55e;
+      }
+    }
+
+    /* Clear filters button */
+    .btn-clear-filters {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      height: 44px;
+
+      i {
+        font-size: 0.875rem;
+      }
+
+      &:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box {
+        min-width: 100%;
+      }
+
+      .filter-dropdown,
+      .filter-calendar {
+        min-width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .btn-nouveau-cr {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Table Card */
     ::ng-deep .cr-table-card {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+
       .p-card-body {
         padding: 0;
       }
@@ -271,87 +595,336 @@ import { StatutCR, StatutCRLabels, StatutCRColors } from '../../../../domain/enu
       }
     }
 
+    /* Table Header Content */
+    .th-content {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        font-size: 0.875rem;
+        opacity: 0.7;
+      }
+    }
+
+    /* Table Styles */
+    ::ng-deep .p-datatable {
+      .p-datatable-thead {
+        > tr {
+          > th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: none;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            white-space: nowrap;
+
+            &:first-child {
+              padding-left: 1.5rem;
+            }
+
+            &:last-child {
+              padding-right: 1.5rem;
+            }
+
+            .p-sortable-column-icon {
+              color: #94a3b8;
+              margin-left: 0.5rem;
+              font-size: 0.75rem;
+            }
+
+            &.p-highlight {
+              background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+              color: #6366f1;
+
+              .p-sortable-column-icon {
+                color: #6366f1;
+              }
+            }
+
+            &:hover:not(.p-highlight) {
+              background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+              color: #475569;
+            }
+          }
+        }
+      }
+
+      .p-datatable-tbody {
+        > tr {
+          transition: all 0.15s ease;
+
+          > td {
+            padding: 1rem 1.25rem;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            font-size: 0.9375rem;
+            color: #1e293b;
+
+            &:first-child {
+              padding-left: 1.5rem;
+            }
+
+            &:last-child {
+              padding-right: 1.5rem;
+            }
+          }
+
+          &:hover {
+            background: #f8fafc;
+          }
+
+          &:last-child > td {
+            border-bottom: none;
+          }
+
+          &.p-datatable-row-selected {
+            background: rgba(99, 102, 241, 0.08);
+          }
+        }
+      }
+
+      /* Pagination */
+      .p-paginator {
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border: none;
+        border-top: 1px solid #e2e8f0;
+
+        .p-paginator-current {
+          color: #64748b;
+          font-size: 0.875rem;
+        }
+
+        .p-paginator-element {
+          min-width: 2.25rem;
+          height: 2.25rem;
+          border-radius: 8px;
+          margin: 0 0.125rem;
+          color: #64748b;
+          border: 1px solid transparent;
+
+          &:hover:not(.p-disabled) {
+            background: #e2e8f0;
+            color: #1e293b;
+          }
+
+          &.p-highlight {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+          }
+        }
+
+        .p-dropdown {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          height: 2.25rem;
+
+          .p-dropdown-label {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+          }
+        }
+      }
+    }
+
+    /* Custom Cell Styles */
     .date-cell {
       display: flex;
       flex-direction: column;
+      gap: 0.125rem;
     }
 
     .date-value {
-      font-weight: 500;
-      color: #1f2937;
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 0.9375rem;
     }
 
     .date-day {
       font-size: 0.75rem;
-      color: #6b7280;
+      color: #64748b;
       text-transform: capitalize;
     }
 
     .rdqd-cell {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.375rem;
     }
 
     .rdqd-value {
-      font-weight: 600;
-      color: #1f2937;
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 1rem;
     }
 
     .rdqd-progress {
-      width: 60px;
-      height: 4px;
-      background: #e5e7eb;
-      border-radius: 2px;
+      width: 50px;
+      height: 5px;
+      background: #e2e8f0;
+      border-radius: 3px;
       overflow: hidden;
     }
 
     .rdqd-progress-bar {
       height: 100%;
       background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
-      border-radius: 2px;
+      border-radius: 3px;
       transition: width 0.3s ease;
     }
 
+    /* Prayer cell */
+    .prayer-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        color: #8b5cf6;
+        font-size: 0.875rem;
+      }
+    }
+
+    /* Lecture cell */
+    .lecture-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .lecture-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+      }
+    }
+
+    /* Actions cell */
     .actions-cell {
       display: flex;
       gap: 0.25rem;
+      justify-content: flex-end;
     }
 
+    ::ng-deep .actions-cell {
+      .p-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+
+        &.p-button-text {
+          color: #64748b;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+          }
+
+          &.p-button-success {
+            color: #22c55e;
+
+            &:hover {
+              background: rgba(34, 197, 94, 0.1);
+            }
+          }
+
+          &.p-button-danger {
+            color: #ef4444;
+
+            &:hover {
+              background: rgba(239, 68, 68, 0.1);
+            }
+          }
+        }
+      }
+    }
+
+    /* Status Tag */
+    ::ng-deep .p-tag {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+
+      &.p-tag-success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #16a34a;
+      }
+
+      &.p-tag-info {
+        background: rgba(59, 130, 246, 0.1);
+        color: #2563eb;
+      }
+
+      &.p-tag-secondary {
+        background: rgba(245, 158, 11, 0.1);
+        color: #d97706;
+      }
+    }
+
+    /* Empty State */
     .empty-state {
       text-align: center;
-      padding: 3rem;
+      padding: 4rem 2rem;
 
       i {
-        font-size: 3rem;
-        color: #d1d5db;
-        margin-bottom: 1rem;
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+        display: block;
       }
 
       h3 {
         margin: 0 0 0.5rem;
-        color: #374151;
+        color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 600;
       }
 
       p {
-        margin: 0 0 1rem;
-        color: #6b7280;
+        margin: 0 0 1.5rem;
+        color: #64748b;
+        font-size: 0.9375rem;
+      }
+
+      button {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
       }
     }
 
     .skeleton-container {
-      padding: 1rem;
+      padding: 1.5rem;
     }
   `]
 })
-export class CompteRenduListComponent implements OnInit {
+export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly facade = inject(CompteRenduFacade);
   private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroy$ = new Subject<void>();
 
-  comptesRendus$ = this.facade.comptesRendus$;
-  loading$ = this.facade.loading$;
+  // State - directly bound properties for immediate rendering
+  allComptesRendus: CompteRendu[] = [];
+  isLoading = true;
 
   searchTerm = '';
   selectedStatut: StatutCR | null = null;
@@ -363,13 +936,38 @@ export class CompteRenduListComponent implements OnInit {
     { label: 'Validé', value: StatutCR.VALIDE }
   ];
 
-  private allComptesRendus: CompteRendu[] = [];
-
   ngOnInit(): void {
-    this.facade.loadMyCompteRendus();
-    this.comptesRendus$.subscribe(crs => {
-      this.allComptesRendus = crs;
+    // Subscribe to loading state
+    this.facade.loading$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(loading => {
+      this.isLoading = loading;
+      this.cdr.detectChanges();
     });
+
+    // Subscribe to data
+    this.facade.comptesRendus$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(crs => {
+      this.allComptesRendus = crs;
+      this.cdr.detectChanges();
+    });
+
+    // Load data
+    this.facade.loadMyCompteRendus();
+  }
+
+  ngAfterViewInit(): void {
+    // Force resize after view is initialized
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get filteredComptesRendus(): CompteRendu[] {
@@ -407,6 +1005,17 @@ export class CompteRenduListComponent implements OnInit {
 
   getStatutLabel(statut: StatutCR): string {
     return StatutCRLabels[statut];
+  }
+
+  getStatutLabelFromValue(statut: StatutCR): string {
+    const option = this.statutOptions.find(o => o.value === statut);
+    return option?.label || '';
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedStatut = null;
+    this.dateRange = null;
   }
 
   getStatutSeverity(statut: StatutCR): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
