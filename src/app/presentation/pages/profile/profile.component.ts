@@ -170,16 +170,16 @@ import { Role } from '../../../domain/enums';
             <div class="profile-actions">
               <button
                 pButton
-                label="Modifier le profil sur Keycloak"
+                label="Modifier le profil"
                 icon="pi pi-external-link"
-                class="p-button-outlined"
+                class="btn-keycloak"
                 (click)="openKeycloakProfile()">
               </button>
               <button
                 pButton
                 label="Se déconnecter"
                 icon="pi pi-sign-out"
-                class="p-button-danger p-button-outlined"
+                class="btn-logout"
                 (click)="onLogout()">
               </button>
             </div>
@@ -365,6 +365,57 @@ import { Role } from '../../../domain/enums';
       padding-top: 1rem;
     }
 
+    ::ng-deep .btn-keycloak {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 600 !important;
+      padding: 0.75rem 1.5rem !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
+      transition: all 0.2s ease !important;
+
+      .p-button-icon {
+        margin-right: 0.5rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    ::ng-deep .btn-logout {
+      background: transparent !important;
+      border: 2px solid #ef4444 !important;
+      color: #ef4444 !important;
+      font-weight: 600 !important;
+      padding: 0.75rem 1.5rem !important;
+      border-radius: 12px !important;
+      transition: all 0.2s ease !important;
+
+      .p-button-icon {
+        margin-right: 0.5rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        border-color: transparent !important;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35) !important;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
     .no-data {
       text-align: center;
       padding: 4rem;
@@ -403,8 +454,10 @@ import { Role } from '../../../domain/enums';
         flex-direction: column;
       }
 
-      .profile-actions button {
-        width: 100%;
+      ::ng-deep .btn-keycloak,
+      ::ng-deep .btn-logout {
+        width: 100% !important;
+        justify-content: center !important;
       }
     }
   `]

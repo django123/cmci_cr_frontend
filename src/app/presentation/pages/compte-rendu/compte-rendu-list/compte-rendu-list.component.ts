@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, ChangeDetectorRef, ApplicationRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -184,8 +184,8 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
               <tr>
                 <td>
                   <div class="date-cell">
-                    <span class="date-value">{{ cr.date | date:'dd MMM yyyy':'':'fr' }}</span>
-                    <span class="date-day">{{ cr.date | date:'EEEE':'':'fr' }}</span>
+                    <span class="date-value">{{ cr.date | date:'dd MMM yyyy' }}</span>
+                    <span class="date-day">{{ cr.date | date:'EEEE' }}</span>
                   </div>
                 </td>
                 <td>
@@ -920,6 +920,8 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly ngZone = inject(NgZone);
   private readonly destroy$ = new Subject<void>();
 
   // State - directly bound properties for immediate rendering
@@ -942,7 +944,9 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
       takeUntil(this.destroy$)
     ).subscribe(loading => {
       this.isLoading = loading;
-      this.cdr.detectChanges();
+      if (!loading) {
+        this.forceUIUpdate();
+      }
     });
 
     // Subscribe to data
@@ -950,7 +954,7 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
       takeUntil(this.destroy$)
     ).subscribe(crs => {
       this.allComptesRendus = crs;
-      this.cdr.detectChanges();
+      this.forceUIUpdate();
     });
 
     // Load data
@@ -959,15 +963,24 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
 
   ngAfterViewInit(): void {
     // Force resize after view is initialized
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.detectChanges();
-    }, 0);
+    this.ngZone.runOutsideAngular(() => {
+      setTimeout(() => {
+        this.ngZone.run(() => {
+          window.dispatchEvent(new Event('resize'));
+          this.forceUIUpdate();
+        });
+      }, 100);
+    });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private forceUIUpdate(): void {
+    this.cdr.detectChanges();
+    this.appRef.tick();
   }
 
   get filteredComptesRendus(): CompteRendu[] {

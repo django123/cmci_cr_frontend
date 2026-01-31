@@ -602,18 +602,41 @@ import { AuthService } from '../../../../infrastructure/auth';
       background: rgba(255, 255, 255, 0.25) !important;
     }
 
-    .btn-submit, .btn-validate {
+    .btn-submit {
       background: white !important;
       color: #6366f1 !important;
       border: none !important;
       font-weight: 600 !important;
       border-radius: 10px !important;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s ease !important;
     }
 
-    .btn-submit:hover, .btn-validate:hover {
+    .btn-submit:hover {
       background: #f8fafc !important;
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .btn-validate {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+      color: white !important;
+      border: none !important;
+      font-weight: 600 !important;
+      border-radius: 10px !important;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+      transition: all 0.2s ease !important;
+      padding: 0.75rem 1.5rem !important;
+    }
+
+    .btn-validate:hover {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5) !important;
+    }
+
+    .btn-validate:active {
+      transform: translateY(0);
     }
 
     /* Meta Bar */

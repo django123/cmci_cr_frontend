@@ -1,14 +1,19 @@
-import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER, LOCALE_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
 import { KeycloakService, KeycloakAngularModule } from 'keycloak-angular';
 import Aura from '@primeuix/themes/aura';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 
 import { routes } from './app.routes';
 import { initializeKeycloak } from './infrastructure/auth/keycloak-init.factory';
 import { AuthInterceptor } from './infrastructure/auth/auth.interceptor';
+
+// Enregistrer la locale française
+registerLocaleData(localeFr);
 
 // Repositories (Injection de dépendances - principes SOLID)
 import { CompteRenduRepository, CommentaireRepository, StatisticsRepository, AuthRepository } from './domain/repositories';
@@ -58,6 +63,9 @@ export const appConfig: ApplicationConfig = {
     { provide: CompteRenduRepository, useClass: CompteRenduHttpRepository },
     { provide: CommentaireRepository, useClass: CommentaireHttpRepository },
     { provide: StatisticsRepository, useClass: StatisticsHttpRepository },
-    { provide: AuthRepository, useClass: AuthService }
+    { provide: AuthRepository, useClass: AuthService },
+
+    // Locale française pour les pipes de date
+    { provide: LOCALE_ID, useValue: 'fr-FR' }
   ]
 };

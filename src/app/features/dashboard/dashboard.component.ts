@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, OnDestroy, ApplicationRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -10,11 +10,12 @@ import { RippleModule } from 'primeng/ripple';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, catchError, finalize } from 'rxjs/operators';
 
 import { CompteRenduFacade } from '../../application/use-cases';
 import { AuthService } from '../../infrastructure/auth';
+import { VerseService, DailyVerse } from '../../infrastructure/services/verse.service';
 import { CompteRendu } from '../../domain/models';
 import { StatutCR, Role, canViewOthersCR } from '../../domain/enums';
 
@@ -46,8 +47,13 @@ interface StatCard {
       <!-- Welcome Section -->
       <section class="welcome-section">
         <div class="welcome-content">
-          <h1>Bonjour, {{ userName }} <span class="wave">&#128075;</span></h1>
-          <p>{{ getGreetingMessage() }}</p>
+          @if (isLoading) {
+            <p-skeleton width="200px" height="2rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton width="300px" height="1rem"></p-skeleton>
+          } @else {
+            <h1>Bonjour, {{ userName }} <span class="wave">&#128075;</span></h1>
+            <p>{{ getGreetingMessage() }}</p>
+          }
         </div>
         <div class="quick-actions">
           <button class="quick-action-btn primary" pRipple routerLink="/compte-rendu/new">
@@ -69,10 +75,15 @@ interface StatCard {
               <i class="pi" [ngClass]="stat.icon"></i>
             </div>
             <div class="stat-content">
-              <span class="stat-value">{{ stat.value }}</span>
-              <span class="stat-title">{{ stat.title }}</span>
-              @if (stat.subValue) {
-                <span class="stat-sub">{{ stat.subValue }}</span>
+              @if (isLoading) {
+                <p-skeleton width="60px" height="1.75rem" styleClass="mb-1"></p-skeleton>
+                <p-skeleton width="80px" height="0.875rem"></p-skeleton>
+              } @else {
+                <span class="stat-value">{{ stat.value }}</span>
+                <span class="stat-title">{{ stat.title }}</span>
+                @if (stat.subValue) {
+                  <span class="stat-sub">{{ stat.subValue }}</span>
+                }
               }
             </div>
           </div>
@@ -88,6 +99,23 @@ interface StatCard {
             <a routerLink="/compte-rendu" class="view-all-link">Voir tout <i class="pi pi-arrow-right"></i></a>
           </div>
           <div class="cr-list">
+            @if (isLoading) {
+              @for (i of [1,2,3]; track i) {
+                <div class="cr-card skeleton-card">
+                  <div class="cr-header">
+                    <p-skeleton shape="circle" size="44px"></p-skeleton>
+                    <div class="cr-info" style="flex: 1">
+                      <p-skeleton width="150px" height="1rem" styleClass="mb-2"></p-skeleton>
+                      <p-skeleton width="200px" height="0.75rem"></p-skeleton>
+                    </div>
+                    <p-skeleton width="80px" height="1.5rem" borderRadius="20px"></p-skeleton>
+                  </div>
+                  <div class="cr-footer">
+                    <p-skeleton width="100px" height="0.75rem"></p-skeleton>
+                  </div>
+                </div>
+              }
+            } @else {
             @for (cr of recentCRs; track cr.id) {
               <div class="cr-card" pRipple (click)="viewCR(cr)">
                 <div class="cr-header">
@@ -153,6 +181,7 @@ interface StatCard {
                 <button pButton label="Créer un CR" icon="pi pi-plus" routerLink="/compte-rendu/new"></button>
               </div>
             }
+            }
           </div>
         </section>
 
@@ -161,33 +190,46 @@ interface StatCard {
           <!-- Weekly Activity Chart -->
           <div class="sidebar-card chart-card">
             <h3>Activité hebdomadaire</h3>
-            <p-chart type="bar" [data]="activityChartData" [options]="chartOptions" height="200px"></p-chart>
+            @if (isLoading) {
+              <p-skeleton width="100%" height="200px"></p-skeleton>
+            } @else {
+              <p-chart type="bar" [data]="activityChartData" [options]="chartOptions" height="200px"></p-chart>
+            }
           </div>
 
           <!-- Spiritual Progress -->
           <div class="sidebar-card progress-card">
             <h3>Progression spirituelle</h3>
-            <div class="progress-item">
-              <div class="progress-header">
-                <span>RDQD du mois</span>
-                <span class="progress-value">{{ rdqdProgress }}%</span>
+            @if (isLoading) {
+              @for (i of [1,2,3]; track i) {
+                <div class="progress-item">
+                  <p-skeleton width="100%" height="0.875rem" styleClass="mb-2"></p-skeleton>
+                  <p-skeleton width="100%" height="8px"></p-skeleton>
+                </div>
+              }
+            } @else {
+              <div class="progress-item">
+                <div class="progress-header">
+                  <span>RDQD du mois</span>
+                  <span class="progress-value">{{ rdqdProgress }}%</span>
+                </div>
+                <p-progressBar [value]="rdqdProgress" [showValue]="false" styleClass="progress-bar"></p-progressBar>
               </div>
-              <p-progressBar [value]="rdqdProgress" [showValue]="false" styleClass="progress-bar"></p-progressBar>
-            </div>
-            <div class="progress-item">
-              <div class="progress-header">
-                <span>CR soumis</span>
-                <span class="progress-value">{{ submittedCRCount }}/{{ totalExpectedCR }}</span>
+              <div class="progress-item">
+                <div class="progress-header">
+                  <span>CR soumis</span>
+                  <span class="progress-value">{{ submittedCRCount }}/{{ totalExpectedCR }}</span>
+                </div>
+                <p-progressBar [value]="submissionProgress" [showValue]="false" styleClass="progress-bar secondary"></p-progressBar>
               </div>
-              <p-progressBar [value]="submissionProgress" [showValue]="false" styleClass="progress-bar secondary"></p-progressBar>
-            </div>
-            <div class="progress-item">
-              <div class="progress-header">
-                <span>CR validés</span>
-                <span class="progress-value">{{ validatedCRCount }}</span>
+              <div class="progress-item">
+                <div class="progress-header">
+                  <span>CR validés</span>
+                  <span class="progress-value">{{ validatedCRCount }}</span>
+                </div>
+                <p-progressBar [value]="validationProgress" [showValue]="false" styleClass="progress-bar success"></p-progressBar>
               </div>
-              <p-progressBar [value]="validationProgress" [showValue]="false" styleClass="progress-bar success"></p-progressBar>
-            </div>
+            }
           </div>
 
           <!-- Daily Reminder -->
@@ -210,10 +252,20 @@ interface StatCard {
               <i class="pi pi-book"></i>
             </div>
             <h3>Verset du jour</h3>
-            <blockquote>
-              "Cherchez premièrement le royaume de Dieu et sa justice, et toutes ces choses vous seront données par-dessus."
-            </blockquote>
-            <cite>- Matthieu 6:33</cite>
+            @if (verseLoading) {
+              <div class="verse-skeleton">
+                <p-skeleton width="100%" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="100%" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="80%" height="1rem" styleClass="mb-3"></p-skeleton>
+                <p-skeleton width="40%" height="0.875rem"></p-skeleton>
+              </div>
+            } @else {
+              <blockquote>
+                "{{ dailyVerse.text }}"
+              </blockquote>
+              <cite>- {{ dailyVerse.reference }}</cite>
+              <span class="verse-version">{{ dailyVerse.version }}</span>
+            }
           </div>
         </aside>
       </div>
@@ -710,7 +762,7 @@ interface StatCard {
       }
 
       blockquote {
-        margin: 0 0 0.5rem;
+        margin: 0 0 0.75rem;
         font-size: 0.9rem;
         font-style: italic;
         color: #1e3a8a;
@@ -718,9 +770,24 @@ interface StatCard {
       }
 
       cite {
-        font-size: 0.8rem;
+        font-size: 0.875rem;
         color: #3b82f6;
         font-style: normal;
+        font-weight: 600;
+        display: block;
+      }
+
+      .verse-version {
+        display: block;
+        font-size: 0.7rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .verse-skeleton {
+        padding: 0.5rem 0;
       }
     }
 
@@ -743,6 +810,17 @@ interface StatCard {
       p {
         margin: 0 0 1rem;
         color: #6b7280;
+      }
+    }
+
+    /* Skeleton Card */
+    .skeleton-card {
+      cursor: default;
+
+      .cr-footer {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
       }
     }
 
@@ -778,13 +856,27 @@ interface StatCard {
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly crFacade = inject(CompteRenduFacade);
   private readonly authService = inject(AuthService);
+  private readonly verseService = inject(VerseService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly ngZone = inject(NgZone);
   private readonly destroy$ = new Subject<void>();
+
+  // État de chargement global
+  isLoading = true;
+  verseLoading = true;
 
   userName = 'Utilisateur';
   recentCRs: CompteRendu[] = [];
   statsCards: StatCard[] = [];
+
+  // Verset du jour
+  dailyVerse: DailyVerse = {
+    text: "Cherchez premièrement le royaume de Dieu et sa justice, et toutes ces choses vous seront données par-dessus.",
+    reference: "Matthieu 6:33",
+    version: "Louis Segond"
+  };
 
   activityChartData: any;
   chartOptions: any;
@@ -799,16 +891,42 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.initChart();
-    this.loadUserInfo();
-    this.loadData();
+    this.initDefaultStats();
+    this.loadAllData();
+    this.loadDailyVerse();
+  }
+
+  /**
+   * Charge le verset du jour depuis l'API
+   */
+  private loadDailyVerse(): void {
+    this.verseLoading = true;
+    this.verseService.getDailyVerse().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (verse) => {
+        this.dailyVerse = verse;
+        this.verseLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.verseLoading = false;
+        // Garder le verset par défaut
+      }
+    });
   }
 
   ngAfterViewInit(): void {
-    // Force chart resize after view is initialized
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.detectChanges();
-    }, 0);
+    // Force chart resize après l'initialisation de la vue
+    this.ngZone.runOutsideAngular(() => {
+      setTimeout(() => {
+        this.ngZone.run(() => {
+          window.dispatchEvent(new Event('resize'));
+          this.cdr.detectChanges();
+          this.appRef.tick();
+        });
+      }, 100);
+    });
   }
 
   ngOnDestroy(): void {
@@ -816,55 +934,99 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private loadUserInfo(): void {
-    this.authService.getCurrentUser().subscribe({
-      next: (user) => {
-        this.userName = user.prenom || user.nom || 'Utilisateur';
-      },
-      error: () => {
-        this.userName = 'Utilisateur';
-      }
-    });
+  /**
+   * Initialise les stats par défaut pour éviter l'écran vide
+   */
+  private initDefaultStats(): void {
+    this.statsCards = [
+      { title: 'CR ce mois', value: '0', subValue: 'chargement...', icon: 'pi-file-edit', color: '#6366f1' },
+      { title: 'Temps de prière', value: '0h', subValue: 'ce mois', icon: 'pi-clock', color: '#8b5cf6' },
+      { title: 'Chapitres lus', value: '0', subValue: 'ce mois', icon: 'pi-book', color: '#22c55e' },
+      { title: 'Évangélisations', value: '0', subValue: 'personnes contactées', icon: 'pi-users', color: '#f59e0b' }
+    ];
   }
 
-  private loadData(): void {
-    // Charger selon le rôle de l'utilisateur
-    this.authService.getCurrentUser().pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (user) => {
-        console.log('[Dashboard] User role:', user.role, 'User ID:', user.id);
+  /**
+   * Charge toutes les données en une seule fois
+   */
+  private loadAllData(): void {
+    this.isLoading = true;
 
+    // Charger l'utilisateur d'abord
+    this.authService.getCurrentUser().pipe(
+      takeUntil(this.destroy$),
+      catchError(err => {
+        console.error('[Dashboard] Error getting user:', err);
+        this.userName = 'Utilisateur';
+        return of(null);
+      })
+    ).subscribe(user => {
+      if (user) {
+        this.userName = user.prenom || user.nom || 'Utilisateur';
+
+        // Charger les CRs selon le rôle
         if (canViewOthersCR(user.role)) {
           const supervisedUserIds = this.getSupervisedUserIds(user.role);
-          console.log('[Dashboard] Loading CRs for supervised users:', supervisedUserIds);
           this.crFacade.loadCompteRendusForUsers(supervisedUserIds);
         } else {
           this.crFacade.loadMyCompteRendus();
         }
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('[Dashboard] Error getting user:', err);
+      } else {
         this.crFacade.loadMyCompteRendus();
       }
+
+      // Force un rafraîchissement immédiat
+      this.forceUIUpdate();
     });
 
+    // S'abonner aux CRs
     this.crFacade.comptesRendus$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(crs => {
-      this.recentCRs = [...crs]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
-
-      this.calculateStats(crs);
-      this.checkTodayCR(crs);
-      this.updateChart(crs);
-
-      // Force la détection des changements et le resize des graphiques
-      this.cdr.detectChanges();
-      window.dispatchEvent(new Event('resize'));
+      this.processCompteRendus(crs);
     });
+
+    // S'abonner au loading state
+    this.crFacade.loading$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(loading => {
+      this.isLoading = loading;
+      if (!loading) {
+        // Quand le chargement est terminé, forcer la mise à jour complète
+        this.ngZone.run(() => {
+          this.forceUIUpdate();
+          // Delay supplémentaire pour les graphiques
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+            this.cdr.detectChanges();
+          }, 50);
+        });
+      }
+    });
+  }
+
+  /**
+   * Traite les comptes rendus chargés
+   */
+  private processCompteRendus(crs: CompteRendu[]): void {
+    this.recentCRs = [...crs]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
+    this.calculateStats(crs);
+    this.checkTodayCR(crs);
+    this.updateChart(crs);
+
+    // Force la mise à jour de l'UI
+    this.forceUIUpdate();
+  }
+
+  /**
+   * Force la mise à jour de l'interface utilisateur
+   */
+  private forceUIUpdate(): void {
+    this.cdr.detectChanges();
+    this.appRef.tick();
   }
 
   /**
