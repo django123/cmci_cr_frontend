@@ -16,8 +16,8 @@ import { AuthInterceptor } from './infrastructure/auth/auth.interceptor';
 registerLocaleData(localeFr);
 
 // Repositories (Injection de dépendances - principes SOLID)
-import { CompteRenduRepository, CommentaireRepository, StatisticsRepository, AuthRepository } from './domain/repositories';
-import { CompteRenduHttpRepository, CommentaireHttpRepository, StatisticsHttpRepository } from './infrastructure/repositories';
+import { CompteRenduRepository, CommentaireRepository, StatisticsRepository, AuthRepository, SubordinatesRepository } from './domain/repositories';
+import { CompteRenduHttpRepository, CommentaireHttpRepository, StatisticsHttpRepository, SubordinatesHttpRepository } from './infrastructure/repositories';
 import { AuthService } from './infrastructure/auth';
 
 export const appConfig: ApplicationConfig = {
@@ -63,6 +63,7 @@ export const appConfig: ApplicationConfig = {
     { provide: CompteRenduRepository, useClass: CompteRenduHttpRepository },
     { provide: CommentaireRepository, useClass: CommentaireHttpRepository },
     { provide: StatisticsRepository, useClass: StatisticsHttpRepository },
+    { provide: SubordinatesRepository, useClass: SubordinatesHttpRepository },
     { provide: AuthRepository, useClass: AuthService },
 
     // Locale française pour les pipes de date

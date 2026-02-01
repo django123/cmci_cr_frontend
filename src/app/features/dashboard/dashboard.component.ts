@@ -9,14 +9,16 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { RippleModule } from 'primeng/ripple';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
+import { AvatarModule } from 'primeng/avatar';
+import { BadgeModule } from 'primeng/badge';
 
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, catchError, finalize } from 'rxjs/operators';
 
-import { CompteRenduFacade } from '../../application/use-cases';
+import { CompteRenduFacade, SubordinatesFacade } from '../../application/use-cases';
 import { AuthService } from '../../infrastructure/auth';
 import { VerseService, DailyVerse } from '../../infrastructure/services/verse.service';
-import { CompteRendu } from '../../domain/models';
+import { CompteRendu, DiscipleWithCRStatus } from '../../domain/models';
 import { StatutCR, Role, canViewOthersCR } from '../../domain/enums';
 
 interface StatCard {
@@ -40,7 +42,9 @@ interface StatCard {
     ProgressBarModule,
     RippleModule,
     SkeletonModule,
-    TooltipModule
+    TooltipModule,
+    AvatarModule,
+    BadgeModule
   ],
   template: `
     <div class="dashboard">
@@ -245,6 +249,111 @@ interface StatCard {
               <p class="success-text"><i class="pi pi-check-circle"></i> Vous avez déjà rempli votre CR aujourd'hui. Continuez ainsi !</p>
             }
           </div>
+
+          <!-- Disciples Widget (visible only for FD, Leader, Pasteur, Admin) -->
+          @if (canViewDisciples) {
+            <div class="sidebar-card disciples-card">
+              <div class="disciples-header">
+                <div class="disciples-title">
+                  <div class="disciples-icon">
+                    <i class="pi pi-users"></i>
+                  </div>
+                  <div>
+                    <h3>Mes Disciples</h3>
+                    <span class="disciples-subtitle">Suivi spirituel</span>
+                  </div>
+                </div>
+                @if (disciplesWithAlert > 0) {
+                  <span class="alert-badge" pTooltip="Disciples nécessitant attention">
+                    {{ disciplesWithAlert }}
+                  </span>
+                }
+              </div>
+
+              @if (disciplesLoading) {
+                <div class="disciples-list">
+                  @for (i of [1, 2, 3]; track i) {
+                    <div class="disciple-item skeleton">
+                      <p-skeleton shape="circle" size="40px"></p-skeleton>
+                      <div class="disciple-info">
+                        <p-skeleton width="120px" height="0.9rem" styleClass="mb-2"></p-skeleton>
+                        <p-skeleton width="80px" height="0.75rem"></p-skeleton>
+                      </div>
+                      <p-skeleton width="50px" height="1.5rem" borderRadius="12px"></p-skeleton>
+                    </div>
+                  }
+                </div>
+              } @else {
+                @if (disciples.length > 0) {
+                  <div class="disciples-stats">
+                    <div class="stat-mini">
+                      <span class="stat-mini-value">{{ disciples.length }}</span>
+                      <span class="stat-mini-label">Total</span>
+                    </div>
+                    <div class="stat-mini success">
+                      <span class="stat-mini-value">{{ disciplesWithCRToday }}</span>
+                      <span class="stat-mini-label">CR aujourd'hui</span>
+                    </div>
+                    <div class="stat-mini warning">
+                      <span class="stat-mini-value">{{ disciplesWithAlert }}</span>
+                      <span class="stat-mini-label">Alertes</span>
+                    </div>
+                  </div>
+
+                  <div class="disciples-list">
+                    @for (disciple of disciplesToShow; track disciple.discipleId) {
+                      <div class="disciple-item" [class.has-alert]="disciple.alerte" pRipple>
+                        <div class="disciple-avatar" [class.online]="disciple.crAujourdhui">
+                          @if (disciple.avatarUrl) {
+                            <img [src]="disciple.avatarUrl" [alt]="disciple.nomComplet" />
+                          } @else {
+                            <span class="avatar-initials">{{ getInitials(disciple.prenom, disciple.nom) }}</span>
+                          }
+                          <span class="status-dot" [class.active]="disciple.crAujourdhui" [class.warning]="!disciple.crAujourdhui && disciple.niveauAlerte === 'WARNING'" [class.critical]="disciple.niveauAlerte === 'CRITICAL'"></span>
+                        </div>
+                        <div class="disciple-info">
+                          <span class="disciple-name">{{ disciple.prenom }} {{ disciple.nom }}</span>
+                          <span class="disciple-status">
+                            @if (disciple.crAujourdhui) {
+                              <i class="pi pi-check-circle success"></i> CR rempli aujourd'hui
+                            } @else if (disciple.joursDepuisDernierCR !== null && disciple.joursDepuisDernierCR !== undefined) {
+                              @if (disciple.joursDepuisDernierCR === 0) {
+                                <i class="pi pi-check-circle success"></i> CR rempli aujourd'hui
+                              } @else if (disciple.joursDepuisDernierCR <= 2) {
+                                <i class="pi pi-clock"></i> {{ disciple.joursDepuisDernierCR }}j sans CR
+                              } @else {
+                                <i class="pi pi-exclamation-triangle warning"></i> {{ disciple.joursDepuisDernierCR }}j sans CR
+                              }
+                            } @else {
+                              <i class="pi pi-info-circle"></i> Aucun CR
+                            }
+                          </span>
+                        </div>
+                        <div class="disciple-rate" [class.good]="disciple.tauxRegularite30j >= 70" [class.medium]="disciple.tauxRegularite30j >= 40 && disciple.tauxRegularite30j < 70" [class.low]="disciple.tauxRegularite30j < 40">
+                          {{ disciple.tauxRegularite30j | number:'1.0-0' }}%
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (disciples.length > 4) {
+                    <button class="view-all-disciples" pRipple (click)="toggleShowAllDisciples()">
+                      @if (showAllDisciples) {
+                        <i class="pi pi-chevron-up"></i> Réduire
+                      } @else {
+                        <i class="pi pi-chevron-down"></i> Voir tous ({{ disciples.length }})
+                      }
+                    </button>
+                  }
+                } @else {
+                  <div class="disciples-empty">
+                    <i class="pi pi-user-plus"></i>
+                    <p>Aucun disciple assigné</p>
+                  </div>
+                }
+              }
+            </div>
+          }
 
           <!-- Verse of the Day -->
           <div class="sidebar-card verse-card">
@@ -824,6 +933,326 @@ interface StatCard {
       }
     }
 
+    /* Disciples Card */
+    .disciples-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: #86efac;
+      overflow: hidden;
+
+      .disciples-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .disciples-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .disciples-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #166534;
+      }
+
+      .disciples-subtitle {
+        font-size: 0.75rem;
+        color: #4ade80;
+        font-weight: 500;
+      }
+
+      .alert-badge {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.625rem;
+        border-radius: 12px;
+        min-width: 24px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        animation: pulse-alert 2s infinite;
+      }
+
+      @keyframes pulse-alert {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+    }
+
+    .disciples-stats {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-mini {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      .stat-mini-value {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      .stat-mini-label {
+        display: block;
+        font-size: 0.65rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-top: 0.125rem;
+      }
+
+      &.success {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        .stat-mini-value { color: #16a34a; }
+        .stat-mini-label { color: #22c55e; }
+      }
+
+      &.warning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        .stat-mini-value { color: #d97706; }
+        .stat-mini-label { color: #f59e0b; }
+      }
+    }
+
+    .disciples-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    .disciple-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #86efac;
+      }
+
+      &.has-alert {
+        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+        border-color: #fdba74;
+
+        &:hover {
+          border-color: #f97316;
+        }
+      }
+
+      &.skeleton {
+        cursor: default;
+        &:hover {
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+
+    .disciple-avatar {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: visible;
+
+      img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e5e7eb;
+      }
+
+      .avatar-initials {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 2px solid #e5e7eb;
+      }
+
+      &.online {
+        img, .avatar-initials {
+          border-color: #22c55e;
+        }
+      }
+
+      .status-dot {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid white;
+        background: #9ca3af;
+
+        &.active {
+          background: #22c55e;
+          box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+        }
+
+        &.warning {
+          background: #f59e0b;
+          box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
+        &.critical {
+          background: #ef4444;
+          box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+          animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      }
+    }
+
+    .disciple-info {
+      flex: 1;
+      min-width: 0;
+
+      .disciple-name {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1f2937;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .disciple-status {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.7rem;
+        color: #6b7280;
+        margin-top: 0.125rem;
+
+        i {
+          font-size: 0.7rem;
+
+          &.success { color: #22c55e; }
+          &.warning { color: #f59e0b; }
+        }
+      }
+    }
+
+    .disciple-rate {
+      padding: 0.25rem 0.625rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      min-width: 48px;
+      text-align: center;
+
+      &.good {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        color: #16a34a;
+      }
+
+      &.medium {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #d97706;
+      }
+
+      &.low {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        color: #dc2626;
+      }
+    }
+
+    .view-all-disciples {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.625rem;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px dashed #86efac;
+      border-radius: 10px;
+      color: #16a34a;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: white;
+        border-style: solid;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+      }
+
+      i {
+        font-size: 0.75rem;
+      }
+    }
+
+    .disciples-empty {
+      text-align: center;
+      padding: 1.5rem;
+
+      i {
+        font-size: 2rem;
+        color: #86efac;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #4ade80;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 1200px) {
       .content-grid {
@@ -855,6 +1284,7 @@ interface StatCard {
 })
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly crFacade = inject(CompteRenduFacade);
+  private readonly subordinatesFacade = inject(SubordinatesFacade);
   private readonly authService = inject(AuthService);
   private readonly verseService = inject(VerseService);
   private readonly router = inject(Router);
@@ -866,6 +1296,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   // État de chargement global
   isLoading = true;
   verseLoading = true;
+  disciplesLoading = true;
 
   userName = 'Utilisateur';
   recentCRs: CompteRendu[] = [];
@@ -888,6 +1319,23 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   submissionProgress = 0;
   validationProgress = 0;
   hasTodayCR = false;
+
+  // Disciples (pour FD/Leader/Pasteur/Admin)
+  canViewDisciples = false;
+  disciples: DiscipleWithCRStatus[] = [];
+  showAllDisciples = false;
+  disciplesWithAlert = 0;
+  disciplesWithCRToday = 0;
+
+  /**
+   * Retourne les disciples à afficher (4 premiers ou tous selon showAllDisciples)
+   */
+  get disciplesToShow(): DiscipleWithCRStatus[] {
+    if (this.showAllDisciples) {
+      return this.disciples;
+    }
+    return this.disciples.slice(0, 4);
+  }
 
   ngOnInit(): void {
     this.initChart();
@@ -964,15 +1412,22 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       if (user) {
         this.userName = user.prenom || user.nom || 'Utilisateur';
 
+        // Vérifier si l'utilisateur peut voir les disciples
+        this.canViewDisciples = canViewOthersCR(user.role);
+
         // Charger les CRs selon le rôle
-        if (canViewOthersCR(user.role)) {
+        if (this.canViewDisciples) {
           const supervisedUserIds = this.getSupervisedUserIds(user.role);
           this.crFacade.loadCompteRendusForUsers(supervisedUserIds);
+          // Charger les disciples
+          this.loadDisciples();
         } else {
           this.crFacade.loadMyCompteRendus();
+          this.disciplesLoading = false;
         }
       } else {
         this.crFacade.loadMyCompteRendus();
+        this.disciplesLoading = false;
       }
 
       // Force un rafraîchissement immédiat
@@ -1249,5 +1704,67 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   viewCR(cr: CompteRendu): void {
     this.router.navigate(['/compte-rendu', cr.id]);
+  }
+
+  /**
+   * Charge les disciples depuis l'API
+   */
+  private loadDisciples(): void {
+    this.disciplesLoading = true;
+
+    this.subordinatesFacade.getDisciplesStatus().pipe(
+      takeUntil(this.destroy$),
+      catchError(err => {
+        console.error('[Dashboard] Error loading disciples:', err);
+        return of([]);
+      })
+    ).subscribe(disciples => {
+      this.disciples = this.sortDisciples(disciples);
+      this.calculateDisciplesStats();
+      this.disciplesLoading = false;
+      this.forceUIUpdate();
+    });
+  }
+
+  /**
+   * Trie les disciples: alertes en premier, puis par taux de régularité
+   */
+  private sortDisciples(disciples: DiscipleWithCRStatus[]): DiscipleWithCRStatus[] {
+    return [...disciples].sort((a, b) => {
+      // Alertes critiques en premier
+      if (a.niveauAlerte === 'CRITICAL' && b.niveauAlerte !== 'CRITICAL') return -1;
+      if (b.niveauAlerte === 'CRITICAL' && a.niveauAlerte !== 'CRITICAL') return 1;
+
+      // Puis alertes warning
+      if (a.niveauAlerte === 'WARNING' && b.niveauAlerte === 'NONE') return -1;
+      if (b.niveauAlerte === 'WARNING' && a.niveauAlerte === 'NONE') return 1;
+
+      // Ensuite par taux de régularité (les plus bas en premier pour attention)
+      return (a.tauxRegularite30j || 0) - (b.tauxRegularite30j || 0);
+    });
+  }
+
+  /**
+   * Calcule les statistiques des disciples
+   */
+  private calculateDisciplesStats(): void {
+    this.disciplesWithAlert = this.disciples.filter(d => d.alerte).length;
+    this.disciplesWithCRToday = this.disciples.filter(d => d.crAujourdhui).length;
+  }
+
+  /**
+   * Retourne les initiales d'un nom
+   */
+  getInitials(prenom: string, nom: string): string {
+    const firstInitial = prenom?.charAt(0)?.toUpperCase() || '';
+    const lastInitial = nom?.charAt(0)?.toUpperCase() || '';
+    return `${firstInitial}${lastInitial}`;
+  }
+
+  /**
+   * Bascule l'affichage de tous les disciples
+   */
+  toggleShowAllDisciples(): void {
+    this.showAllDisciples = !this.showAllDisciples;
   }
 }

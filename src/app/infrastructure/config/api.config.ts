@@ -50,5 +50,13 @@ export const ApiEndpoints = {
   STATISTICS: {
     PERSONAL: '/statistics/personal',
     BY_USER: (userId: string) => `/statistics/user/${userId}`
+  },
+
+  // Subordonnés (visibilité hiérarchique)
+  SUBORDINATES: {
+    CR: '/subordinates/cr',
+    SUMMARY: '/subordinates/cr/summary',
+    STATISTICS: '/subordinates/statistics',
+    DISCIPLES: '/subordinates/disciples'
   }
 } as const;
