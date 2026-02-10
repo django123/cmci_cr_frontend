@@ -398,10 +398,16 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      height: 100%;
+    }
+
     .cr-form-page {
-      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
       background: #f8fafc;
-      padding-bottom: 2rem;
     }
 
     /* Header */
@@ -412,9 +418,8 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
       padding: 1.25rem 2rem;
       background: white;
       border-bottom: 1px solid #e2e8f0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      flex-shrink: 0;
+      z-index: 10;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
@@ -526,9 +531,13 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
 
     /* Form Content */
     .form-content {
+      flex: 1;
+      overflow-y: auto;
       max-width: 1400px;
       margin: 0 auto;
       padding: 2rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .form-row {

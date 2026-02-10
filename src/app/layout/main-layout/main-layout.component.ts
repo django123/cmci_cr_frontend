@@ -56,14 +56,15 @@ import { Subject } from 'rxjs';
 
     .main-content {
       flex: 1;
-      padding: 2rem;
       overflow-y: auto;
       overflow-x: hidden;
-      height: calc(100vh - 70px); /* Header height approximation */
+      height: calc(100vh - 70px);
+      position: relative;
+      isolation: isolate;
     }
 
     .content-wrapper {
-      min-height: 100%;
+      height: 100%;
       width: 100%;
     }
 
