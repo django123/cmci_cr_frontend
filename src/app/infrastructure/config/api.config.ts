@@ -58,5 +58,56 @@ export const ApiEndpoints = {
     SUMMARY: '/subordinates/cr/summary',
     STATISTICS: '/subordinates/statistics',
     DISCIPLES: '/subordinates/disciples'
+  },
+
+  // Administration des utilisateurs
+  ADMIN_USERS: {
+    BASE: '/admin/users',
+    BY_ID: (id: string) => `/admin/users/${id}`,
+    BY_ROLE: (role: string) => `/admin/users/role/${role}`,
+    SEARCH: '/admin/users/search',
+    ASSIGN_ROLE: (id: string) => `/admin/users/${id}/role`,
+    STATISTICS: '/admin/users/statistics',
+    PENDING: '/admin/users/pending'
+  },
+
+  // Regions
+  REGIONS: {
+    BASE: '/admin/regions',
+    BY_ID: (id: string) => `/admin/regions/${id}`,
+    BY_CODE: (code: string) => `/admin/regions/code/${code}`
+  },
+
+  // Zones
+  ZONES: {
+    BASE: '/admin/zones',
+    BY_ID: (id: string) => `/admin/zones/${id}`
+  },
+
+  // Eglises Locales
+  EGLISES_LOCALES: {
+    BASE: '/admin/eglises-locales',
+    BY_ID: (id: string) => `/admin/eglises-locales/${id}`
+  },
+
+  // Eglises de Maison
+  EGLISES_MAISON: {
+    BASE: '/admin/eglises-maison',
+    BY_ID: (id: string) => `/admin/eglises-maison/${id}`
+  },
+
+  // Geographie (seed)
+  GEOGRAPHY: {
+    SEED: '/admin/geography/seed'
+  },
+
+  // Gestion des disciples
+  DISCIPLES: {
+    ASSIGN_FD: (discipleId: string) => `/disciples/${discipleId}/assign-fd`,
+    REMOVE_FD: (discipleId: string) => `/disciples/${discipleId}/fd`,
+    BY_FD: (fdId: string) => `/disciples/fd/${fdId}`,
+    MY_DISCIPLES: '/disciples/my-disciples',
+    UNASSIGNED: '/disciples/unassigned',
+    COUNT_BY_FD: (fdId: string) => `/disciples/count/fd/${fdId}`
   }
 } as const;

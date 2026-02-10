@@ -58,12 +58,26 @@ export const routes: Routes = [
           .then(m => m.ValidationComponent),
         data: { roles: [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
-      // Utilisateurs (Admin)
+      // Administration des utilisateurs (Pasteur, Admin)
       {
         path: 'users',
-        loadComponent: () => import('./features/dashboard/dashboard.component')
-          .then(m => m.DashboardComponent),
-        data: { roles: [Role.ADMIN] }
+        loadComponent: () => import('./presentation/pages/user-admin/user-admin.component')
+          .then(m => m.UserAdminComponent),
+        data: { roles: [Role.PASTEUR, Role.ADMIN] }
+      },
+      // Administration hierarchie ecclesiale (Pasteur, Admin)
+      {
+        path: 'administration',
+        loadComponent: () => import('./presentation/pages/administration/administration.component')
+          .then(m => m.AdministrationComponent),
+        data: { roles: [Role.PASTEUR, Role.ADMIN] }
+      },
+      // Gestion des disciples (FD, Leader, Pasteur, Admin)
+      {
+        path: 'disciples',
+        loadComponent: () => import('./presentation/pages/disciples/disciples.component')
+          .then(m => m.DisciplesComponent),
+        data: { roles: [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
       // Profil utilisateur
       {

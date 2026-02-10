@@ -3,3 +3,5 @@ export * from './commentaire-response.dto';
 export * from './statistics-response.dto';
 export * from './error-response.dto';
 export * from './subordinate-response.dto';
+export * from './disciple-response.dto';
+export * from './geography-response.dto';

@@ -381,7 +381,9 @@ export class SidebarComponent {
 
   managementItems: MenuItem[] = [
     { label: 'Validation', icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn' },
-    { label: 'Utilisateurs', icon: 'pi-users', route: '/users' }
+    { label: 'Disciples', icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info' },
+    { label: 'Utilisateurs', icon: 'pi-users', route: '/users' },
+    { label: 'Administration', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger' }
   ];
 
   toggleCollapse(): void {
