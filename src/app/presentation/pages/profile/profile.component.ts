@@ -9,7 +9,8 @@ import { DividerModule } from 'primeng/divider';
 import { SkeletonModule } from 'primeng/skeleton';
 
 import { AuthService } from '../../../infrastructure/auth/auth.service';
-import { Utilisateur } from '../../../domain/models';
+import { EgliseMaisonRepository } from '../../../domain/repositories';
+import { Utilisateur, EgliseMaison } from '../../../domain/models';
 import { Role } from '../../../domain/enums';
 
 @Component({
@@ -138,26 +139,44 @@ import { Role } from '../../../domain/enums';
                   </div>
                 </div>
 
-                @if (currentUser.egliseMaisonId) {
+                @if (egliseMaison) {
                   <div class="detail-item">
                     <div class="detail-icon church">
                       <i class="pi pi-home"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Église Maison</span>
-                      <span class="detail-value">ID: {{ currentUser.egliseMaisonId }}</span>
+                      <span class="detail-label">Église de Maison</span>
+                      <span class="detail-value">{{ egliseMaison.nom }}</span>
                     </div>
                   </div>
-                }
 
-                @if (currentUser.fdId) {
                   <div class="detail-item">
                     <div class="detail-icon church">
-                      <i class="pi pi-users"></i>
+                      <i class="pi pi-building"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Famille de Disciples</span>
-                      <span class="detail-value">ID: {{ currentUser.fdId }}</span>
+                      <span class="detail-label">Église Locale</span>
+                      <span class="detail-value">{{ egliseMaison.egliseLocaleNom }}</span>
+                    </div>
+                  </div>
+                } @else if (currentUser.egliseMaisonId && loadingEglise) {
+                  <div class="detail-item">
+                    <div class="detail-icon church">
+                      <i class="pi pi-home"></i>
+                    </div>
+                    <div class="detail-content">
+                      <span class="detail-label">Église de Maison</span>
+                      <p-skeleton width="150px" height="18px"></p-skeleton>
+                    </div>
+                  </div>
+                } @else if (!currentUser.egliseMaisonId) {
+                  <div class="detail-item">
+                    <div class="detail-icon church">
+                      <i class="pi pi-home"></i>
+                    </div>
+                    <div class="detail-content">
+                      <span class="detail-label">Église de Maison</span>
+                      <span class="detail-value not-assigned">Non assigné</span>
                     </div>
                   </div>
                 }
@@ -356,6 +375,12 @@ import { Role } from '../../../domain/enums';
       font-size: 1rem;
       font-weight: 500;
       color: #1f2937;
+
+      &.not-assigned {
+        color: #94a3b8;
+        font-style: italic;
+        font-weight: 400;
+      }
     }
 
     .profile-actions {
@@ -464,14 +489,18 @@ import { Role } from '../../../domain/enums';
 })
 export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly egliseMaisonRepo = inject(EgliseMaisonRepository);
 
   currentUser: Utilisateur | null = null;
+  egliseMaison: EgliseMaison | null = null;
   loading = true;
+  loadingEglise = false;
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       this.loading = false;
+      this.loadEgliseMaison(user);
     });
 
     // Charger l'utilisateur si pas déjà chargé
@@ -479,10 +508,25 @@ export class ProfileComponent implements OnInit {
       next: (user) => {
         this.currentUser = user;
         this.loading = false;
+        this.loadEgliseMaison(user);
       },
       error: (err) => {
         console.error('Erreur chargement profil:', err);
         this.loading = false;
+      }
+    });
+  }
+
+  private loadEgliseMaison(user: Utilisateur | null): void {
+    if (!user?.egliseMaisonId || this.egliseMaison) return;
+    this.loadingEglise = true;
+    this.egliseMaisonRepo.getById(user.egliseMaisonId).subscribe({
+      next: (em) => {
+        this.egliseMaison = em;
+        this.loadingEglise = false;
+      },
+      error: () => {
+        this.loadingEglise = false;
       }
     });
   }
