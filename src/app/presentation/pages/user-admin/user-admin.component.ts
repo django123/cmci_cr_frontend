@@ -9,13 +9,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
-import { InputTextModule } from 'primeng/inputtext';
 import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
-import { ChartModule } from 'primeng/chart';
 import { MessageService } from 'primeng/api';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
 
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -38,16 +34,14 @@ import { Role, RoleLabels } from '../../../domain/enums';
     ToastModule,
     DialogModule,
     DropdownModule,
-    InputTextModule,
     AvatarModule,
-    SkeletonModule,
-    ChartModule,
-    IconFieldModule,
-    InputIconModule
+    SkeletonModule
   ],
   providers: [MessageService],
   template: `
     <div class="user-admin-container">
+      <p-toast></p-toast>
+
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
@@ -56,93 +50,89 @@ import { Role, RoleLabels } from '../../../domain/enums';
         </div>
         <div class="header-actions">
           <button
-            pButton
-            icon="pi pi-refresh"
-            label="Actualiser"
-            class="p-button-outlined"
+            type="button"
+            class="btn-refresh"
             (click)="refreshData()">
+            <i class="pi pi-refresh"></i>
+            <span>Actualiser</span>
           </button>
         </div>
       </div>
 
       <!-- Statistics Cards -->
       <div class="stats-grid">
-        <p-card styleClass="stat-card">
-          <div class="stat-content">
-            <div class="stat-icon total">
-              <i class="pi pi-users"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ statistics?.totalUsers || 0 }}</span>
-              <span class="stat-label">Total Utilisateurs</span>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon total">
+            <i class="pi pi-users"></i>
           </div>
-        </p-card>
+          <div class="stat-info">
+            <span class="stat-value">{{ statistics?.totalUsers || 0 }}</span>
+            <span class="stat-label">Total Utilisateurs</span>
+          </div>
+        </div>
 
-        <p-card styleClass="stat-card">
-          <div class="stat-content">
-            <div class="stat-icon pending">
-              <i class="pi pi-clock"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ pendingCount }}</span>
-              <span class="stat-label">En attente</span>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon pending">
+            <i class="pi pi-clock"></i>
           </div>
-        </p-card>
+          <div class="stat-info">
+            <span class="stat-value">{{ pendingCount }}</span>
+            <span class="stat-label">En attente</span>
+          </div>
+        </div>
 
-        <p-card styleClass="stat-card">
-          <div class="stat-content">
-            <div class="stat-icon fd">
-              <i class="pi pi-heart"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ statistics?.roleDistribution?.['FD'] || 0 }}</span>
-              <span class="stat-label">Faiseurs de Disciples</span>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon fd">
+            <i class="pi pi-heart"></i>
           </div>
-        </p-card>
+          <div class="stat-info">
+            <span class="stat-value">{{ statistics?.roleDistribution?.['FD'] || 0 }}</span>
+            <span class="stat-label">Faiseurs de Disciples</span>
+          </div>
+        </div>
 
-        <p-card styleClass="stat-card">
-          <div class="stat-content">
-            <div class="stat-icon pasteur">
-              <i class="pi pi-star"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ statistics?.roleDistribution?.['PASTEUR'] || 0 }}</span>
-              <span class="stat-label">Pasteurs</span>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon pasteur">
+            <i class="pi pi-star"></i>
           </div>
-        </p-card>
+          <div class="stat-info">
+            <span class="stat-value">{{ statistics?.roleDistribution?.['PASTEUR'] || 0 }}</span>
+            <span class="stat-label">Pasteurs</span>
+          </div>
+        </div>
       </div>
 
       <!-- Filters -->
-      <p-card styleClass="filters-card">
-        <div class="filters-row">
-          <p-iconField>
-            <p-inputIcon styleClass="pi pi-search" />
-            <input
-              type="text"
-              pInputText
-              placeholder="Rechercher un utilisateur..."
-              [(ngModel)]="searchQuery"
-              (ngModelChange)="onSearchChange($event)"
-              class="search-input" />
-          </p-iconField>
+      <div class="filters-bar">
+        <div class="search-box">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="Rechercher un utilisateur..."
+            class="search-input" />
+          @if (searchQuery) {
+            <button type="button" class="clear-btn" (click)="searchQuery = ''; onSearchChange('')">
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
 
+        <div class="filter-dropdown">
           <p-dropdown
             [options]="roleOptions"
             [(ngModel)]="selectedRole"
             placeholder="Filtrer par role"
             [showClear]="true"
             (onChange)="onRoleFilterChange($event)"
-            styleClass="role-dropdown">
+            styleClass="filter-select">
           </p-dropdown>
         </div>
-      </p-card>
+      </div>
 
       <!-- Users Table -->
-      <p-card styleClass="users-table-card">
+      <p-card styleClass="table-card">
         @if (isLoading) {
           <div class="skeleton-container">
             @for (i of [1,2,3,4,5]; track i) {
@@ -151,7 +141,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
         } @else {
           <p-table
-            [value]="users"
+            [value]="filteredUsers"
             [paginator]="true"
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 25, 50]"
@@ -161,12 +151,45 @@ import { Role, RoleLabels } from '../../../domain/enums';
 
             <ng-template pTemplate="header">
               <tr>
-                <th style="width: 25%">Utilisateur</th>
-                <th style="width: 20%">Email</th>
-                <th style="width: 15%">Role</th>
-                <th style="width: 15%">Statut</th>
-                <th style="width: 15%">Inscription</th>
-                <th style="width: 10%; text-align: right">Actions</th>
+                <th pSortableColumn="nomComplet" style="width: 25%">
+                  <div class="th-content">
+                    <i class="pi pi-user"></i>
+                    <span>Utilisateur</span>
+                    <p-sortIcon field="nomComplet"></p-sortIcon>
+                  </div>
+                </th>
+                <th pSortableColumn="email" style="width: 22%">
+                  <div class="th-content">
+                    <i class="pi pi-envelope"></i>
+                    <span>Email</span>
+                    <p-sortIcon field="email"></p-sortIcon>
+                  </div>
+                </th>
+                <th pSortableColumn="role" style="width: 15%">
+                  <div class="th-content">
+                    <i class="pi pi-shield"></i>
+                    <span>Role</span>
+                    <p-sortIcon field="role"></p-sortIcon>
+                  </div>
+                </th>
+                <th style="width: 13%">
+                  <div class="th-content">
+                    <i class="pi pi-circle-fill"></i>
+                    <span>Statut</span>
+                  </div>
+                </th>
+                <th pSortableColumn="createdAt" style="width: 15%">
+                  <div class="th-content">
+                    <i class="pi pi-calendar"></i>
+                    <span>Inscription</span>
+                    <p-sortIcon field="createdAt"></p-sortIcon>
+                  </div>
+                </th>
+                <th style="width: 10%; text-align: right">
+                  <div class="th-content" style="justify-content: flex-end">
+                    <span>Actions</span>
+                  </div>
+                </th>
               </tr>
             </ng-template>
 
@@ -174,17 +197,13 @@ import { Role, RoleLabels } from '../../../domain/enums';
               <tr>
                 <td>
                   <div class="user-cell">
-                    <p-avatar
-                      icon="pi pi-user"
-                      shape="circle"
-                      styleClass="user-avatar">
-                    </p-avatar>
-                    <div class="user-info">
-                      <span class="user-name">{{ user.nomComplet }}</span>
+                    <div class="entity-icon user-icon">
+                      <i class="pi pi-user"></i>
                     </div>
+                    <span class="entity-name">{{ user.nomComplet }}</span>
                   </div>
                 </td>
-                <td>{{ user.email }}</td>
+                <td class="text-secondary">{{ user.email }}</td>
                 <td>
                   <p-tag
                     [value]="getRoleLabel(user.role)"
@@ -197,7 +216,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     [severity]="user.statut === 'ACTIF' ? 'success' : 'warn'">
                   </p-tag>
                 </td>
-                <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td class="text-secondary">{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
                 <td>
                   <div class="actions-cell">
                     <button
@@ -233,50 +252,43 @@ import { Role, RoleLabels } from '../../../domain/enums';
         header="Modifier le role"
         [(visible)]="showRoleDialog"
         [modal]="true"
-        [style]="{ width: '400px' }"
-        [closable]="true">
-        <div class="dialog-content" *ngIf="selectedUser">
-          <div class="user-preview">
-            <p-avatar
-              icon="pi pi-user"
-              size="large"
-              shape="circle"
-              styleClass="dialog-avatar">
-            </p-avatar>
-            <div class="user-preview-info">
-              <span class="name">{{ selectedUser.nomComplet }}</span>
-              <span class="email">{{ selectedUser.email }}</span>
+        [style]="{ width: '440px' }"
+        [closable]="true"
+        styleClass="admin-dialog">
+        <div class="dialog-body" *ngIf="selectedUser">
+          <div class="entity-preview">
+            <div class="entity-icon user-icon large">
+              <i class="pi pi-user"></i>
+            </div>
+            <div class="preview-info">
+              <span class="preview-name">{{ selectedUser.nomComplet }}</span>
+              <span class="preview-detail">{{ selectedUser.email }}</span>
             </div>
           </div>
 
-          <div class="role-selection">
-            <label>Nouveau role</label>
+          <div class="form-field">
+            <label>Nouveau role <span class="required">*</span></label>
             <p-dropdown
               [options]="assignableRoles"
               [(ngModel)]="newRole"
               placeholder="Selectionner un role"
-              styleClass="w-full">
+              styleClass="w-full dialog-dropdown">
             </p-dropdown>
           </div>
         </div>
         <ng-template pTemplate="footer">
-          <button
-            pButton
-            label="Annuler"
-            class="p-button-text"
-            (click)="showRoleDialog = false">
-          </button>
-          <button
-            pButton
-            label="Confirmer"
-            icon="pi pi-check"
-            [disabled]="!newRole"
-            (click)="confirmRoleChange()">
-          </button>
+          <div class="dialog-footer">
+            <button type="button" class="btn-dialog-cancel" (click)="showRoleDialog = false">
+              <i class="pi pi-times"></i>
+              <span>Annuler</span>
+            </button>
+            <button type="button" class="btn-dialog-save" [disabled]="!newRole" (click)="confirmRoleChange()">
+              <i class="pi pi-check"></i>
+              <span>Confirmer</span>
+            </button>
+          </div>
         </ng-template>
       </p-dialog>
-
-      <p-toast></p-toast>
     </div>
   `,
   styles: [`
@@ -284,6 +296,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
       padding: 0;
     }
 
+    /* ===== Page Header ===== */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -304,6 +317,37 @@ import { Role, RoleLabels } from '../../../domain/enums';
       font-size: 0.875rem;
     }
 
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* ===== Header Buttons (custom) ===== */
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: white;
+      color: #64748b;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      height: 44px;
+
+      i { font-size: 0.875rem; }
+
+      &:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #475569;
+      }
+    }
+
+    /* ===== Statistics Cards (custom, no p-card) ===== */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -311,31 +355,22 @@ import { Role, RoleLabels } from '../../../domain/enums';
       margin-bottom: 1.5rem;
     }
 
-    @media (max-width: 1200px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    ::ng-deep .stat-card {
-      .p-card-body {
-        padding: 1rem;
-      }
-      .p-card-content {
-        padding: 0;
-      }
-    }
-
-    .stat-content {
+    .stat-card {
       display: flex;
       align-items: center;
       gap: 1rem;
+      padding: 1.25rem;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+      &:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        transform: translateY(-1px);
+      }
     }
 
     .stat-icon {
@@ -346,26 +381,12 @@ import { Role, RoleLabels } from '../../../domain/enums';
       align-items: center;
       justify-content: center;
       font-size: 1.25rem;
+      flex-shrink: 0;
 
-      &.total {
-        background: rgba(99, 102, 241, 0.1);
-        color: #6366f1;
-      }
-
-      &.pending {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-      }
-
-      &.fd {
-        background: rgba(236, 72, 153, 0.1);
-        color: #ec4899;
-      }
-
-      &.pasteur {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-      }
+      &.total { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+      &.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+      &.fd { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+      &.pasteur { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
     }
 
     .stat-info {
@@ -377,6 +398,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
       font-size: 1.5rem;
       font-weight: 700;
       color: #1e293b;
+      line-height: 1.2;
     }
 
     .stat-label {
@@ -384,124 +406,571 @@ import { Role, RoleLabels } from '../../../domain/enums';
       color: #64748b;
     }
 
-    ::ng-deep .filters-card {
-      margin-bottom: 1.5rem;
+    /* ===== Filters Bar (custom like CR list) ===== */
+    .filters-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
 
-      .p-card-body {
-        padding: 1rem;
-      }
-      .p-card-content {
-        padding: 0;
+    /* ===== Search Box (custom like CR list) ===== */
+    .search-box {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 250px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0 1rem;
+      height: 44px;
+      transition: all 0.2s ease;
+
+      &:focus-within {
+        background: white;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
       }
     }
 
-    .filters-row {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
+    .search-icon {
+      color: #94a3b8;
+      font-size: 0.9375rem;
+      margin-right: 0.75rem;
+    }
+
+    .search-box:focus-within .search-icon {
+      color: #6366f1;
     }
 
     .search-input {
-      width: 300px;
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.9375rem;
+      color: #1e293b;
+      outline: none;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
     }
 
-    ::ng-deep .role-dropdown {
+    .clear-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: #e2e8f0;
+      border-radius: 50%;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      i { font-size: 0.7rem; }
+
+      &:hover {
+        background: #cbd5e1;
+        color: #475569;
+      }
+    }
+
+    /* ===== Filter Dropdown (custom like CR list) ===== */
+    .filter-dropdown {
       min-width: 200px;
     }
 
-    ::ng-deep .users-table-card {
-      .p-card-body {
-        padding: 0;
+    ::ng-deep .filter-select {
+      width: 100%;
+
+      .p-dropdown {
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        height: 44px;
+
+        &:not(.p-disabled):hover {
+          border-color: #cbd5e1;
+        }
+
+        &:not(.p-disabled).p-focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
       }
-      .p-card-content {
-        padding: 0;
+
+      .p-dropdown-label {
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+        color: #1e293b;
+
+        &.p-placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .p-dropdown-trigger {
+        width: 2.5rem;
+        color: #64748b;
       }
     }
 
+    /* ===== Table Card ===== */
+    ::ng-deep .table-card {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+
+      .p-card-body { padding: 0; }
+      .p-card-content { padding: 0; }
+    }
+
+    /* ===== Table Header Content (icon + label like CR list) ===== */
+    .th-content {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        font-size: 0.875rem;
+        opacity: 0.7;
+      }
+    }
+
+    /* ===== Table Styles (matching CR list exactly) ===== */
+    ::ng-deep .p-datatable {
+      .p-datatable-thead {
+        > tr {
+          > th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: none;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            white-space: nowrap;
+
+            &:first-child { padding-left: 1.5rem; }
+            &:last-child { padding-right: 1.5rem; }
+
+            .p-sortable-column-icon {
+              color: #94a3b8;
+              margin-left: 0.5rem;
+              font-size: 0.75rem;
+            }
+
+            &.p-highlight {
+              background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+              color: #6366f1;
+
+              .p-sortable-column-icon { color: #6366f1; }
+            }
+
+            &:hover:not(.p-highlight) {
+              background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+              color: #475569;
+            }
+          }
+        }
+      }
+
+      .p-datatable-tbody {
+        > tr {
+          transition: all 0.15s ease;
+
+          > td {
+            padding: 1rem 1.25rem;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            font-size: 0.9375rem;
+            color: #1e293b;
+
+            &:first-child { padding-left: 1.5rem; }
+            &:last-child { padding-right: 1.5rem; }
+          }
+
+          &:hover { background: #f8fafc; }
+          &:last-child > td { border-bottom: none; }
+
+          &.p-datatable-row-selected {
+            background: rgba(99, 102, 241, 0.08);
+          }
+        }
+      }
+
+      /* Pagination (matching CR list exactly) */
+      .p-paginator {
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border: none;
+        border-top: 1px solid #e2e8f0;
+
+        .p-paginator-current {
+          color: #64748b;
+          font-size: 0.875rem;
+        }
+
+        .p-paginator-element {
+          min-width: 2.25rem;
+          height: 2.25rem;
+          border-radius: 8px;
+          margin: 0 0.125rem;
+          color: #64748b;
+          border: 1px solid transparent;
+
+          &:hover:not(.p-disabled) {
+            background: #e2e8f0;
+            color: #1e293b;
+          }
+
+          &.p-highlight {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+          }
+        }
+
+        .p-dropdown {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          height: 2.25rem;
+
+          .p-dropdown-label {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+          }
+        }
+      }
+    }
+
+    /* ===== User Cell (icon + name like entity-cell) ===== */
     .user-cell {
       display: flex;
       align-items: center;
       gap: 0.75rem;
     }
 
-    ::ng-deep .user-avatar {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    .entity-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+
+      &.user-icon {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+        color: #6366f1;
+      }
+
+      &.large {
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+      }
     }
 
-    .user-name {
+    .entity-name {
       font-weight: 600;
       color: #1e293b;
+      font-size: 0.9375rem;
     }
 
+    .text-secondary {
+      color: #64748b;
+    }
+
+    /* ===== Tags ===== */
+    ::ng-deep .p-tag {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+
+    /* ===== Actions Cell ===== */
     .actions-cell {
       display: flex;
       justify-content: flex-end;
+      gap: 0.25rem;
     }
 
+    ::ng-deep .actions-cell {
+      .p-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+
+        &.p-button-text {
+          color: #64748b;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+          }
+        }
+      }
+    }
+
+    /* ===== Empty State (matching CR list) ===== */
     .empty-state {
       text-align: center;
-      padding: 3rem;
+      padding: 4rem 2rem;
 
       i {
-        font-size: 3rem;
-        color: #94a3b8;
-        margin-bottom: 1rem;
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+        display: block;
       }
 
       h3 {
         margin: 0 0 0.5rem;
         color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 600;
       }
 
       p {
-        margin: 0;
+        margin: 0 auto;
         color: #64748b;
+        font-size: 0.9375rem;
+        max-width: 400px;
       }
     }
 
+    /* ===== Skeleton ===== */
     .skeleton-container {
-      padding: 1rem;
+      padding: 1.5rem;
     }
 
-    .dialog-content {
-      padding: 1rem 0;
+    /* ===== Dialog Styles (matching CR form btn-cancel / btn-save) ===== */
+    ::ng-deep .admin-dialog {
+      .p-dialog-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+
+        .p-dialog-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .p-dialog-header-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          color: #64748b;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #475569;
+          }
+        }
+      }
+
+      .p-dialog-content {
+        padding: 1.5rem;
+      }
+
+      .p-dialog-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e2e8f0;
+      }
     }
 
-    .user-preview {
+    .dialog-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .entity-preview {
       display: flex;
       align-items: center;
       gap: 1rem;
       padding: 1rem;
       background: #f8fafc;
       border-radius: 12px;
-      margin-bottom: 1.5rem;
+      border: 1px solid #e2e8f0;
     }
 
-    ::ng-deep .dialog-avatar {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-    }
-
-    .user-preview-info {
+    .preview-info {
       display: flex;
       flex-direction: column;
+    }
 
-      .name {
-        font-weight: 600;
-        color: #1e293b;
+    .preview-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 1rem;
+    }
+
+    .preview-detail {
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        display: block;
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: #374151;
       }
 
-      .email {
-        font-size: 0.875rem;
-        color: #64748b;
+      .required {
+        color: #ef4444;
       }
     }
 
-    .role-selection {
-      label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
+    /* Dialog dropdown */
+    ::ng-deep .admin-dialog {
+      .dialog-dropdown {
+        .p-dropdown {
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          height: 44px;
+
+          &:not(.p-disabled).p-focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          }
+        }
+
+        .p-dropdown-label {
+          padding: 0.625rem 1rem;
+          font-size: 0.9375rem;
+        }
+      }
+    }
+
+    /* Dialog Footer Buttons (matching CR form cancel/save) */
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .btn-dialog-cancel {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      color: #64748b;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      height: 44px;
+      min-width: 120px;
+      justify-content: center;
+
+      i { font-size: 0.875rem; }
+
+      &:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
         color: #475569;
+      }
+    }
+
+    .btn-dialog-save {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.5rem;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      height: 44px;
+      min-width: 140px;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+
+      i { font-size: 0.875rem; }
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        background: #e2e8f0;
+        color: #94a3b8;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+    }
+
+    .w-full {
+      width: 100%;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 1024px) {
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box {
+        min-width: 100%;
+      }
+
+      .filter-dropdown {
+        min-width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr; }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
+      .btn-refresh {
+        flex: 1;
+        justify-content: center;
       }
     }
   `]
@@ -519,6 +988,16 @@ export class UserAdminComponent implements OnInit, OnDestroy {
   isLoading = true;
   searchQuery = '';
   selectedRole: string | null = null;
+
+  // Client-side search filter
+  get filteredUsers(): KeycloakUser[] {
+    if (!this.searchQuery) return this.users;
+    const term = this.searchQuery.toLowerCase();
+    return this.users.filter(u =>
+      u.nomComplet.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term)
+    );
+  }
 
   // Dialog state
   showRoleDialog = false;
