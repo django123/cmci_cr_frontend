@@ -19,4 +19,22 @@ export abstract class StatisticsRepository {
     startDate: Date,
     endDate: Date
   ): Observable<Statistics>;
+
+  /**
+   * Exporte les statistiques personnelles en PDF ou Excel
+   */
+  abstract exportPersonalStatistics(
+    startDate: Date,
+    endDate: Date,
+    format: 'pdf' | 'excel'
+  ): Observable<Blob>;
+
+  /**
+   * Exporte les statistiques de groupe en PDF ou Excel (FD+)
+   */
+  abstract exportGroupStatistics(
+    startDate: Date,
+    endDate: Date,
+    format: 'pdf' | 'excel'
+  ): Observable<Blob>;
 }

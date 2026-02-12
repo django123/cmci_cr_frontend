@@ -18,11 +18,13 @@ export class StatisticsFacade {
   // État local
   private readonly statisticsSubject = new BehaviorSubject<Statistics | null>(null);
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
+  private readonly exportingSubject = new BehaviorSubject<boolean>(false);
   private readonly errorSubject = new BehaviorSubject<string | null>(null);
 
   // Observables publics (lecture seule)
   readonly statistics$ = this.statisticsSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
+  readonly exporting$ = this.exportingSubject.asObservable();
   readonly error$ = this.errorSubject.asObservable();
 
   /**
@@ -96,6 +98,42 @@ export class StatisticsFacade {
   getTotalPrayerFormatted(stats: Statistics): string {
     const totalMinutes = getTotalPrayerMinutes(stats);
     return formatMinutesToReadable(totalMinutes);
+  }
+
+  /**
+   * Exporte les statistiques personnelles en PDF ou Excel
+   */
+  exportPersonalStatistics(startDate: Date, endDate: Date, format: 'pdf' | 'excel'): Observable<Blob> {
+    this.exportingSubject.next(true);
+
+    return this.repository.exportPersonalStatistics(startDate, endDate, format).pipe(
+      tap(() => {
+        this.exportingSubject.next(false);
+      }),
+      catchError(error => {
+        this.exportingSubject.next(false);
+        this.errorSubject.next(error.message);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Exporte les statistiques de groupe en PDF ou Excel (FD+)
+   */
+  exportGroupStatistics(startDate: Date, endDate: Date, format: 'pdf' | 'excel'): Observable<Blob> {
+    this.exportingSubject.next(true);
+
+    return this.repository.exportGroupStatistics(startDate, endDate, format).pipe(
+      tap(() => {
+        this.exportingSubject.next(false);
+      }),
+      catchError(error => {
+        this.exportingSubject.next(false);
+        this.errorSubject.next(error.message);
+        throw error;
+      })
+    );
   }
 
   /**

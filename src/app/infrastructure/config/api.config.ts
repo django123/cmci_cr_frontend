@@ -49,7 +49,9 @@ export const ApiEndpoints = {
   // Statistiques
   STATISTICS: {
     PERSONAL: '/statistics/personal',
-    BY_USER: (userId: string) => `/statistics/user/${userId}`
+    BY_USER: (userId: string) => `/statistics/user/${userId}`,
+    EXPORT_PERSONAL: '/statistics/personal/export',
+    EXPORT_GROUP: '/statistics/group/export'
   },
 
   // Subordonnés (visibilité hiérarchique)

@@ -44,6 +44,24 @@ export class StatisticsHttpRepository extends StatisticsRepository {
       .pipe(map(dto => this.mapper.toDomain(dto)));
   }
 
+  exportPersonalStatistics(startDate: Date, endDate: Date, format: 'pdf' | 'excel'): Observable<Blob> {
+    const params = new HttpParams()
+      .set('startDate', this.formatDate(startDate))
+      .set('endDate', this.formatDate(endDate))
+      .set('format', format);
+
+    return this.http.getBlob(ApiEndpoints.STATISTICS.EXPORT_PERSONAL, { params });
+  }
+
+  exportGroupStatistics(startDate: Date, endDate: Date, format: 'pdf' | 'excel'): Observable<Blob> {
+    const params = new HttpParams()
+      .set('startDate', this.formatDate(startDate))
+      .set('endDate', this.formatDate(endDate))
+      .set('format', format);
+
+    return this.http.getBlob(ApiEndpoints.STATISTICS.EXPORT_GROUP, { params });
+  }
+
   /**
    * Formate une date au format YYYY-MM-DD pour l'API
    */

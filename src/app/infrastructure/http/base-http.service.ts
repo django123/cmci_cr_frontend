@@ -74,6 +74,20 @@ export class BaseHttpService {
   }
 
   /**
+   * Effectue une requête GET qui retourne un Blob (fichier binaire)
+   */
+  getBlob(endpoint: string, options?: RequestOptions): Observable<Blob> {
+    const url = buildApiUrl(this.config, endpoint);
+    return this.http.get(url, {
+      ...(options || {}),
+      responseType: 'blob'
+    } as { responseType: 'blob'; params?: any }).pipe(
+      timeout(this.config.timeout),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Gestion centralisée des erreurs HTTP
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
