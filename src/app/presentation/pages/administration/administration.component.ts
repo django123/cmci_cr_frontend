@@ -753,6 +753,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
             optionValue="value"
             [filter]="true"
             filterPlaceholder="Rechercher..."
+            appendTo="body"
             styleClass="w-full dialog-dropdown">
           </p-dropdown>
         </div>
@@ -806,6 +807,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
             optionValue="value"
             [filter]="true"
             filterPlaceholder="Rechercher..."
+            appendTo="body"
             styleClass="w-full dialog-dropdown">
           </p-dropdown>
         </div>
@@ -863,6 +865,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
             optionValue="value"
             [filter]="true"
             filterPlaceholder="Rechercher..."
+            appendTo="body"
             styleClass="w-full dialog-dropdown">
           </p-dropdown>
         </div>
