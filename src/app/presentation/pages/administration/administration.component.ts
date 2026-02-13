@@ -890,9 +890,9 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       padding: 0;
     }
 
-    /* ===== TabView Styling ===== */
-    ::ng-deep .p-tabview {
-      .p-tabview-nav-container {
+    /* ===== TabView Styling (PrimeNG 19) ===== */
+    ::ng-deep .p-tabs {
+      .p-tablist {
         background: white;
         border-radius: 16px;
         border: 1px solid #e2e8f0;
@@ -901,62 +901,51 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       }
 
-      .p-tabview-nav {
+      .p-tablist-content {
+        background: transparent;
+      }
+
+      .p-tablist-tab-list {
         border: none;
         gap: 0.375rem;
         background: transparent;
+      }
 
-        li {
-          margin: 0;
+      .p-tab {
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        cursor: pointer;
+        margin: 0;
 
-          .p-tabview-nav-link {
-            border: none;
-            background: transparent;
-            color: #64748b;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            transition: all 0.2s ease;
-            gap: 0.5rem;
-            white-space: nowrap;
-
-            &:not(.p-disabled):focus {
-              box-shadow: none;
-            }
-
-            &:hover {
-              background: #f1f5f9;
-              color: #475569;
-            }
-
-            .p-tabview-title {
-              line-height: 1.4;
-            }
-          }
-
-          &.p-highlight {
-            .p-tabview-nav-link {
-              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-              color: white;
-              box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-            }
-          }
-
-          &:not(.p-highlight):not(.p-disabled):hover {
-            .p-tabview-nav-link {
-              background: #f1f5f9;
-              color: #475569;
-            }
-          }
+        &:focus {
+          box-shadow: none;
         }
 
-        .p-tabview-ink-bar {
-          display: none;
+        &:hover:not(.p-tab-active) {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        &.p-tab-active {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+          color: white;
+          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+          border: none;
         }
       }
 
-      .p-tabview-panels {
+      .p-tablist-active-bar {
+        display: none;
+      }
+
+      .p-tabpanels {
         background: transparent;
         padding: 0;
         border: none;
@@ -1184,14 +1173,57 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       }
     }
 
-    /* ===== Filter Dropdown (custom like CR list) ===== */
+    /* ===== Filter Dropdown (PrimeNG 19) ===== */
     .filter-dropdown {
-      min-width: 200px;
+      min-width: 220px;
     }
 
     ::ng-deep .filter-select {
       width: 100%;
 
+      /* PrimeNG 19 uses p-select as host class */
+      &.p-select {
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        height: 44px;
+        transition: all 0.2s ease;
+
+        &:not(.p-disabled):hover {
+          border-color: #cbd5e1;
+          background: white;
+        }
+
+        &:not(.p-disabled).p-focus,
+        &.p-select-open {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          background: white;
+        }
+      }
+
+      .p-select-label {
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+        color: #1e293b;
+
+        &.p-placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .p-select-dropdown {
+        width: 2.5rem;
+        color: #64748b;
+      }
+
+      .p-select-clear-icon {
+        color: #94a3b8;
+        &:hover { color: #64748b; }
+      }
+
+      /* Also keep p-dropdown selectors for backward compat */
       .p-dropdown {
         width: 100%;
         border: 1px solid #e2e8f0;
@@ -1222,6 +1254,54 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       .p-dropdown-trigger {
         width: 2.5rem;
         color: #64748b;
+      }
+    }
+
+    /* Dropdown overlay panel (PrimeNG 19) */
+    ::ng-deep .p-select-overlay {
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+      margin-top: 4px;
+
+      .p-select-header {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+
+        .p-select-filter {
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.875rem;
+
+          &:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          }
+        }
+      }
+
+      .p-select-list {
+        padding: 0.375rem;
+
+        .p-select-option {
+          border-radius: 8px;
+          padding: 0.625rem 1rem;
+          font-size: 0.9375rem;
+          margin: 0.125rem 0;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: #f1f5f9;
+          }
+
+          &.p-select-option-selected {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+            color: #6366f1;
+            font-weight: 500;
+          }
+        }
       }
     }
 
@@ -1644,6 +1724,31 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       }
 
       .dialog-dropdown {
+        /* PrimeNG 19 p-select */
+        .p-select {
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          height: 44px;
+          width: 100%;
+          transition: all 0.2s ease;
+
+          &:not(.p-disabled):hover {
+            border-color: #cbd5e1;
+          }
+
+          &:not(.p-disabled).p-focus,
+          &.p-select-open {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          }
+        }
+
+        .p-select-label {
+          padding: 0.625rem 1rem;
+          font-size: 0.9375rem;
+        }
+
+        /* Legacy p-dropdown fallback */
         .p-dropdown {
           border-radius: 10px;
           border: 1px solid #e2e8f0;
