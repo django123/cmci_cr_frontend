@@ -54,6 +54,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               dateFormat="dd/mm/yy"
               [showIcon]="true"
               (onSelect)="onPeriodChange()"
+              appendTo="body"
               styleClass="period-calendar">
             </p-calendar>
             <div class="period-buttons">

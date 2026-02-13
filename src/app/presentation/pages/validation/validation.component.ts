@@ -494,12 +494,12 @@ import { StatutCR } from '../../../domain/enums';
           }
         }
 
-        .p-dropdown {
+        .p-select, .p-dropdown {
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           height: 2.25rem;
 
-          .p-dropdown-label {
+          .p-select-label, .p-dropdown-label {
             padding: 0.375rem 0.75rem;
             font-size: 0.875rem;
           }

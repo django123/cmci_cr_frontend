@@ -92,6 +92,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                   [showIcon]="true"
                   dateFormat="dd/mm/yy"
                   [maxDate]="today"
+                  appendTo="body"
                   styleClass="w-full"
                   placeholder="Sélectionnez une date">
                 </p-calendar>

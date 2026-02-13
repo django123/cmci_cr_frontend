@@ -272,6 +272,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
               [options]="assignableRoles"
               [(ngModel)]="newRole"
               placeholder="Selectionner un role"
+              appendTo="body"
               styleClass="w-full dialog-dropdown">
             </p-dropdown>
           </div>
@@ -491,24 +492,28 @@ import { Role, RoleLabels } from '../../../domain/enums';
     ::ng-deep .filter-select {
       width: 100%;
 
-      .p-dropdown {
+      &.p-select, .p-dropdown {
         width: 100%;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
         background: #f8fafc;
         height: 44px;
+        transition: all 0.2s ease;
 
         &:not(.p-disabled):hover {
           border-color: #cbd5e1;
+          background: white;
         }
 
-        &:not(.p-disabled).p-focus {
+        &:not(.p-disabled).p-focus,
+        &.p-select-open {
           border-color: #6366f1;
           box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          background: white;
         }
       }
 
-      .p-dropdown-label {
+      .p-select-label, .p-dropdown-label {
         padding: 0.625rem 1rem;
         font-size: 0.9375rem;
         color: #1e293b;
@@ -518,7 +523,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
         }
       }
 
-      .p-dropdown-trigger {
+      .p-select-dropdown, .p-dropdown-trigger {
         width: 2.5rem;
         color: #64748b;
       }
@@ -643,12 +648,12 @@ import { Role, RoleLabels } from '../../../domain/enums';
           }
         }
 
-        .p-dropdown {
+        .p-select, .p-dropdown {
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           height: 2.25rem;
 
-          .p-dropdown-label {
+          .p-select-label, .p-dropdown-label {
             padding: 0.375rem 0.75rem;
             font-size: 0.875rem;
           }
@@ -846,18 +851,21 @@ import { Role, RoleLabels } from '../../../domain/enums';
     /* Dialog dropdown */
     ::ng-deep .admin-dialog {
       .dialog-dropdown {
-        .p-dropdown {
+        .p-select, .p-dropdown {
           border-radius: 10px;
           border: 1px solid #e2e8f0;
           height: 44px;
+          width: 100%;
+          transition: all 0.2s ease;
 
-          &:not(.p-disabled).p-focus {
+          &:not(.p-disabled):hover { border-color: #cbd5e1; }
+          &:not(.p-disabled).p-focus, &.p-select-open {
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
           }
         }
 
-        .p-dropdown-label {
+        .p-select-label, .p-dropdown-label {
           padding: 0.625rem 1rem;
           font-size: 0.9375rem;
         }

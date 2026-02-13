@@ -379,6 +379,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
               placeholder="Selectionner un FD"
               [filter]="true"
               filterBy="nomComplet"
+              appendTo="body"
               styleClass="w-full dialog-dropdown">
               <ng-template let-fd pTemplate="item">
                 <div class="fd-option">
@@ -671,9 +672,9 @@ import { Role, RoleLabels } from '../../../domain/enums';
           &.p-highlight { background: #6366f1; color: white; border-color: #6366f1; }
         }
 
-        .p-dropdown {
+        .p-select, .p-dropdown {
           border: 1px solid #e2e8f0; border-radius: 8px; height: 2.25rem;
-          .p-dropdown-label { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+          .p-select-label, .p-dropdown-label { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
         }
       }
     }
@@ -790,11 +791,13 @@ import { Role, RoleLabels } from '../../../domain/enums';
         border-radius: 10px; border: 1px solid #e2e8f0; padding: 0.75rem 1rem; font-size: 0.9375rem;
         &:enabled:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
       }
-      .dialog-dropdown .p-dropdown {
-        border-radius: 10px; border: 1px solid #e2e8f0; height: 44px;
-        &:not(.p-disabled).p-focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+      .dialog-dropdown .p-select, .dialog-dropdown .p-dropdown {
+        border-radius: 10px; border: 1px solid #e2e8f0; height: 44px; width: 100%;
+        transition: all 0.2s ease;
+        &:not(.p-disabled):hover { border-color: #cbd5e1; }
+        &:not(.p-disabled).p-focus, &.p-select-open { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
       }
-      .dialog-dropdown .p-dropdown-label { padding: 0.625rem 1rem; font-size: 0.9375rem; }
+      .dialog-dropdown .p-select-label, .dialog-dropdown .p-dropdown-label { padding: 0.625rem 1rem; font-size: 0.9375rem; }
     }
 
     .fd-option {
