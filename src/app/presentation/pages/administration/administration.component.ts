@@ -890,6 +890,79 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       padding: 0;
     }
 
+    /* ===== TabView Styling ===== */
+    ::ng-deep .p-tabview {
+      .p-tabview-nav-container {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+
+      .p-tabview-nav {
+        border: none;
+        gap: 0.375rem;
+        background: transparent;
+
+        li {
+          margin: 0;
+
+          .p-tabview-nav-link {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            gap: 0.5rem;
+            white-space: nowrap;
+
+            &:not(.p-disabled):focus {
+              box-shadow: none;
+            }
+
+            &:hover {
+              background: #f1f5f9;
+              color: #475569;
+            }
+
+            .p-tabview-title {
+              line-height: 1.4;
+            }
+          }
+
+          &.p-highlight {
+            .p-tabview-nav-link {
+              background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+              color: white;
+              box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+            }
+          }
+
+          &:not(.p-highlight):not(.p-disabled):hover {
+            .p-tabview-nav-link {
+              background: #f1f5f9;
+              color: #475569;
+            }
+          }
+        }
+
+        .p-tabview-ink-bar {
+          display: none;
+        }
+      }
+
+      .p-tabview-panels {
+        background: transparent;
+        padding: 0;
+        border: none;
+      }
+    }
+
     /* ===== Page Header ===== */
     .page-header {
       display: flex;

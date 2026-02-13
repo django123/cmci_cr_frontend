@@ -450,6 +450,7 @@ import { AuthService } from '../../../../infrastructure/auth';
     .cr-detail-page {
       min-height: 100vh;
       background: #f8fafc;
+      margin: -2rem;
     }
 
     /* Loading State */

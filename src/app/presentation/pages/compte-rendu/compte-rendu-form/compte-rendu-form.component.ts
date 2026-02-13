@@ -408,6 +408,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
       flex-direction: column;
       height: 100%;
       background: #f8fafc;
+      margin: -2rem;
     }
 
     /* Header */

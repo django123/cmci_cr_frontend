@@ -408,8 +408,7 @@ interface StatCard {
   `,
   styles: [`
     .dashboard {
-      max-width: 1600px;
-      margin: 0 auto;
+      max-width: 1400px;
     }
 
     /* Welcome Section */

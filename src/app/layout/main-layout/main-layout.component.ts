@@ -64,13 +64,25 @@ import { Subject } from 'rxjs';
     }
 
     .content-wrapper {
-      height: 100%;
+      min-height: 100%;
       width: 100%;
+      padding: 2rem;
+      max-width: 1600px;
     }
 
     @media (max-width: 1024px) {
       .main-container {
         margin-left: 80px;
+      }
+
+      .content-wrapper {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .content-wrapper {
+        padding: 1rem;
       }
     }
   `]
