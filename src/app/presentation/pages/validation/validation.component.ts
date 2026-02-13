@@ -3,13 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { CardModule } from 'primeng/card';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
+import { RippleModule } from 'primeng/ripple';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
 import { Subject } from 'rxjs';
@@ -26,33 +25,51 @@ import { StatutCR } from '../../../domain/enums';
     CommonModule,
     TableModule,
     ButtonModule,
-    TagModule,
-    CardModule,
     TooltipModule,
     ToastModule,
     ConfirmDialogModule,
     AvatarModule,
-    SkeletonModule
+    SkeletonModule,
+    RippleModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
     <div class="validation-container">
       <!-- Header -->
       <div class="page-header">
-        <div class="header-content">
-          <h1>Validation des Comptes Rendus</h1>
-          <p>Validez les comptes rendus soumis par vos disciples</p>
+        <div class="header-left">
+          <div class="header-icon">
+            <i class="pi pi-check-square"></i>
+          </div>
+          <div class="header-content">
+            <h1>Validation des Comptes Rendus</h1>
+            <p>Validez les comptes rendus soumis par vos disciples</p>
+          </div>
         </div>
         <div class="header-stats">
           <div class="stat-badge pending">
-            <span class="stat-count">{{ pendingCount }}</span>
-            <span class="stat-label">En attente</span>
+            <div class="stat-badge-icon">
+              <i class="pi pi-clock"></i>
+            </div>
+            <div class="stat-badge-content">
+              <span class="stat-count">{{ pendingCount }}</span>
+              <span class="stat-label">En attente</span>
+            </div>
+          </div>
+          <div class="stat-badge validated">
+            <div class="stat-badge-icon validated-icon">
+              <i class="pi pi-check-circle"></i>
+            </div>
+            <div class="stat-badge-content">
+              <span class="stat-count validated-count">{{ validatedCount }}</span>
+              <span class="stat-label">Validés</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Liste des CR à valider -->
-      <p-card styleClass="cr-table-card">
+      <!-- Table Section -->
+      <div class="table-section">
         @if (isLoading) {
           <div class="skeleton-container">
             @for (i of [1,2,3,4,5]; track i) {
@@ -121,11 +138,9 @@ import { StatutCR } from '../../../domain/enums';
               <tr>
                 <td>
                   <div class="user-cell">
-                    <p-avatar
-                      icon="pi pi-user"
-                      shape="circle"
-                      styleClass="user-avatar">
-                    </p-avatar>
+                    <div class="user-avatar-custom">
+                      <i class="pi pi-user"></i>
+                    </div>
                     <div class="user-info">
                       <span class="user-name">Utilisateur</span>
                       @if (!cr.vuParFd) {
@@ -153,6 +168,7 @@ import { StatutCR } from '../../../domain/enums';
                 </td>
                 <td>
                   <div class="prayer-cell">
+                    <span class="prayer-time-icon"><i class="pi pi-clock"></i></span>
                     <span>{{ cr.priereSeule || '00:00' }}</span>
                   </div>
                 </td>
@@ -173,29 +189,29 @@ import { StatutCR } from '../../../domain/enums';
                 <td>
                   <div class="actions-cell">
                     <button
-                      pButton
-                      icon="pi pi-eye"
-                      class="p-button-text p-button-rounded"
+                      class="action-btn view"
                       pTooltip="Voir détails"
                       tooltipPosition="top"
+                      pRipple
                       (click)="viewCR(cr)">
+                      <i class="pi pi-eye"></i>
                     </button>
                     <button
-                      pButton
-                      icon="pi pi-check"
-                      class="p-button-text p-button-rounded p-button-success"
+                      class="action-btn validate"
                       pTooltip="Valider"
                       tooltipPosition="top"
+                      pRipple
                       (click)="validateCR(cr)">
+                      <i class="pi pi-check"></i>
                     </button>
                     @if (!cr.vuParFd) {
                       <button
-                        pButton
-                        icon="pi pi-bookmark"
-                        class="p-button-text p-button-rounded p-button-info"
+                        class="action-btn mark-seen"
                         pTooltip="Marquer comme vu"
                         tooltipPosition="top"
+                        pRipple
                         (click)="markAsViewed(cr)">
+                        <i class="pi pi-bookmark"></i>
                       </button>
                     }
                   </div>
@@ -207,7 +223,9 @@ import { StatutCR } from '../../../domain/enums';
               <tr>
                 <td colspan="7" class="empty-message">
                   <div class="empty-state">
-                    <i class="pi pi-check-circle"></i>
+                    <div class="empty-icon-wrapper">
+                      <i class="pi pi-check-circle"></i>
+                    </div>
                     <h3>Aucun compte rendu en attente</h3>
                     <p>Tous les comptes rendus ont été validés</p>
                   </div>
@@ -216,7 +234,7 @@ import { StatutCR } from '../../../domain/enums';
             </ng-template>
           </p-table>
         }
-      </p-card>
+      </div>
 
       <p-toast></p-toast>
       <p-confirmDialog></p-confirmDialog>
@@ -232,7 +250,34 @@ import { StatutCR } from '../../../domain/enums';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      padding: 1.75rem 2rem;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+
+      i {
+        font-size: 1.5rem;
+        color: white;
+      }
     }
 
     .header-content h1 {
@@ -248,41 +293,78 @@ import { StatutCR } from '../../../domain/enums';
       font-size: 0.875rem;
     }
 
+    .header-stats {
+      display: flex;
+      gap: 1rem;
+    }
+
     .stat-badge {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%);
-      border: 1px solid rgba(245, 158, 11, 0.2);
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.08) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+
+      &.validated {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.08) 100%);
+        border-color: rgba(34, 197, 94, 0.15);
+      }
+    }
+
+    .stat-badge-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+
+      i {
+        font-size: 1rem;
+        color: white;
+      }
+
+      &.validated-icon {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        box-shadow: 0 3px 8px rgba(34, 197, 94, 0.3);
+      }
+    }
+
+    .stat-badge-content {
+      display: flex;
+      flex-direction: column;
     }
 
     .stat-count {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: #f59e0b;
+      line-height: 1.2;
+
+      &.validated-count {
+        color: #22c55e;
+      }
     }
 
     .stat-label {
-      font-size: 0.75rem;
-      color: #92400e;
+      font-size: 0.7rem;
+      color: #64748b;
       font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    /* Table Card */
-    ::ng-deep .cr-table-card {
-      border-radius: 16px;
+    /* Table Section */
+    .table-section {
+      background: white;
+      border-radius: 20px;
       overflow: hidden;
-      border: 1px solid #e2e8f0;
-
-      .p-card-body {
-        padding: 0;
-      }
-
-      .p-card-content {
-        padding: 0;
-      }
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
     }
 
     /* Table Header Content */
@@ -382,7 +464,7 @@ import { StatutCR } from '../../../domain/enums';
       /* Pagination */
       .p-paginator {
         padding: 1rem 1.5rem;
-        background: #f8fafc;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border: none;
         border-top: 1px solid #e2e8f0;
 
@@ -405,9 +487,10 @@ import { StatutCR } from '../../../domain/enums';
           }
 
           &.p-highlight {
-            background: #6366f1;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            border-color: #6366f1;
+            border-color: transparent;
+            box-shadow: 0 3px 8px rgba(99, 102, 241, 0.3);
           }
         }
 
@@ -431,16 +514,26 @@ import { StatutCR } from '../../../domain/enums';
       gap: 0.75rem;
     }
 
+    .user-avatar-custom {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
+
+      i {
+        font-size: 0.9rem;
+        color: white;
+      }
+    }
+
     .user-info {
       display: flex;
       flex-direction: column;
       gap: 0.125rem;
-    }
-
-    ::ng-deep .user-avatar {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-      width: 36px !important;
-      height: 36px !important;
     }
 
     .user-name {
@@ -450,14 +543,17 @@ import { StatutCR } from '../../../domain/enums';
     }
 
     .new-badge {
-      font-size: 0.625rem;
-      font-weight: 600;
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
-      padding: 0.125rem 0.375rem;
-      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      padding: 0.125rem 0.5rem;
+      border-radius: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.025em;
+      letter-spacing: 0.05em;
+      width: fit-content;
     }
 
     /* Custom Cell Styles */
@@ -512,9 +608,19 @@ import { StatutCR } from '../../../domain/enums';
       align-items: center;
       gap: 0.5rem;
 
-      i {
-        color: #8b5cf6;
-        font-size: 0.875rem;
+      .prayer-time-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(139, 92, 246, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          color: #8b5cf6;
+          font-size: 0.75rem;
+        }
       }
     }
 
@@ -527,7 +633,7 @@ import { StatutCR } from '../../../domain/enums';
       .lecture-icon {
         width: 28px;
         height: 28px;
-        border-radius: 6px;
+        border-radius: 8px;
         background: rgba(34, 197, 94, 0.1);
         color: #22c55e;
         display: flex;
@@ -537,50 +643,59 @@ import { StatutCR } from '../../../domain/enums';
       }
     }
 
-    /* Actions cell */
+    /* Action Buttons */
     .actions-cell {
       display: flex;
-      gap: 0.25rem;
+      gap: 0.375rem;
       justify-content: flex-end;
     }
 
-    ::ng-deep .actions-cell {
-      .p-button {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+    .action-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
 
-        &.p-button-text {
-          color: #64748b;
+      i {
+        font-size: 0.875rem;
+      }
 
-          &:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-          }
+      &.view {
+        background: rgba(99, 102, 241, 0.08);
+        color: #6366f1;
 
-          &.p-button-success {
-            color: #22c55e;
+        &:hover {
+          background: rgba(99, 102, 241, 0.15);
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(99, 102, 241, 0.2);
+        }
+      }
 
-            &:hover {
-              background: rgba(34, 197, 94, 0.1);
-            }
-          }
+      &.validate {
+        background: rgba(34, 197, 94, 0.08);
+        color: #22c55e;
 
-          &.p-button-info {
-            color: #3b82f6;
+        &:hover {
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          color: white;
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(34, 197, 94, 0.3);
+        }
+      }
 
-            &:hover {
-              background: rgba(59, 130, 246, 0.1);
-            }
-          }
+      &.mark-seen {
+        background: rgba(59, 130, 246, 0.08);
+        color: #3b82f6;
 
-          &.p-button-danger {
-            color: #ef4444;
-
-            &:hover {
-              background: rgba(239, 68, 68, 0.1);
-            }
-          }
+        &:hover {
+          background: rgba(59, 130, 246, 0.15);
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(59, 130, 246, 0.2);
         }
       }
     }
@@ -590,11 +705,20 @@ import { StatutCR } from '../../../domain/enums';
       text-align: center;
       padding: 4rem 2rem;
 
-      i {
-        font-size: 4rem;
-        color: #22c55e;
-        margin-bottom: 1.5rem;
-        display: block;
+      .empty-icon-wrapper {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(74, 222, 128, 0.1) 100%);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          font-size: 2.5rem;
+          color: #22c55e;
+        }
       }
 
       h3 {
@@ -620,14 +744,14 @@ import { StatutCR } from '../../../domain/enums';
       .page-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 1.25rem;
+        padding: 1.25rem;
       }
 
-      .stat-badge {
+      .header-stats {
         width: 100%;
-        flex-direction: row;
-        justify-content: center;
-        gap: 0.5rem;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   `]
@@ -645,6 +769,7 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
   // State - directly bound properties for immediate rendering
   pendingCRs: CompteRendu[] = [];
   pendingCount = 0;
+  validatedCount = 0;
   isLoading = true;
 
   ngOnInit(): void {
@@ -664,6 +789,14 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
     ).subscribe(crs => {
       this.pendingCRs = crs;
       this.pendingCount = crs.length;
+      this.forceUIUpdate();
+    });
+
+    // Subscribe to validated CRs count
+    this.facade.valides$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(crs => {
+      this.validatedCount = crs.length;
       this.forceUIUpdate();
     });
 

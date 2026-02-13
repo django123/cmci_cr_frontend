@@ -1,16 +1,12 @@
 import { Component, OnInit, AfterViewInit, inject, ChangeDetectorRef, OnDestroy, ApplicationRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
-import { TagModule } from 'primeng/tag';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { RippleModule } from 'primeng/ripple';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
-import { BadgeModule } from 'primeng/badge';
 
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, catchError, finalize } from 'rxjs/operators';
@@ -35,16 +31,12 @@ interface StatCard {
   imports: [
     CommonModule,
     RouterLink,
-    CardModule,
     ButtonModule,
     ChartModule,
-    TagModule,
-    ProgressBarModule,
     RippleModule,
     SkeletonModule,
     TooltipModule,
-    AvatarModule,
-    BadgeModule
+    AvatarModule
   ],
   template: `
     <div class="dashboard">
@@ -99,7 +91,15 @@ interface StatCard {
         <!-- Recent CR -->
         <section class="cr-section">
           <div class="section-header">
-            <h2>Comptes Rendus Récents</h2>
+            <div class="section-title-group">
+              <div class="section-title-icon">
+                <i class="pi pi-history"></i>
+              </div>
+              <div>
+                <h2>Comptes Rendus Récents</h2>
+                <span class="section-subtitle">Vos 5 derniers comptes rendus</span>
+              </div>
+            </div>
             <a routerLink="/compte-rendu" class="view-all-link">Voir tout <i class="pi pi-arrow-right"></i></a>
           </div>
           <div class="cr-list">
@@ -179,10 +179,15 @@ interface StatCard {
               </div>
             } @empty {
               <div class="empty-state">
-                <i class="pi pi-file-edit"></i>
+                <div class="empty-icon-wrapper">
+                  <i class="pi pi-file-edit"></i>
+                </div>
                 <h3>Aucun compte rendu</h3>
                 <p>Commencez par créer votre premier compte rendu spirituel</p>
-                <button pButton label="Créer un CR" icon="pi pi-plus" routerLink="/compte-rendu/new"></button>
+                <button class="btn-empty-cta" pRipple routerLink="/compte-rendu/new">
+                  <i class="pi pi-plus"></i>
+                  <span>Créer un CR</span>
+                </button>
               </div>
             }
             }
@@ -193,7 +198,12 @@ interface StatCard {
         <aside class="dashboard-sidebar">
           <!-- Weekly Activity Chart -->
           <div class="sidebar-card chart-card">
-            <h3>Activité hebdomadaire</h3>
+            <div class="sidebar-card-header">
+              <div class="sidebar-card-icon chart-icon-bg">
+                <i class="pi pi-chart-bar"></i>
+              </div>
+              <h3>Activité hebdomadaire</h3>
+            </div>
             @if (isLoading) {
               <p-skeleton width="100%" height="200px"></p-skeleton>
             } @else {
@@ -203,7 +213,12 @@ interface StatCard {
 
           <!-- Spiritual Progress -->
           <div class="sidebar-card progress-card">
-            <h3>Progression spirituelle</h3>
+            <div class="sidebar-card-header">
+              <div class="sidebar-card-icon progress-icon-bg">
+                <i class="pi pi-chart-line"></i>
+              </div>
+              <h3>Progression spirituelle</h3>
+            </div>
             @if (isLoading) {
               @for (i of [1,2,3]; track i) {
                 <div class="progress-item">
@@ -217,21 +232,27 @@ interface StatCard {
                   <span>RDQD du mois</span>
                   <span class="progress-value">{{ rdqdProgress }}%</span>
                 </div>
-                <p-progressBar [value]="rdqdProgress" [showValue]="false" styleClass="progress-bar"></p-progressBar>
+                <div class="custom-progress-bar">
+                  <div class="custom-progress-fill indigo" [style.width.%]="rdqdProgress"></div>
+                </div>
               </div>
               <div class="progress-item">
                 <div class="progress-header">
                   <span>CR soumis</span>
                   <span class="progress-value">{{ submittedCRCount }}/{{ totalExpectedCR }}</span>
                 </div>
-                <p-progressBar [value]="submissionProgress" [showValue]="false" styleClass="progress-bar secondary"></p-progressBar>
+                <div class="custom-progress-bar">
+                  <div class="custom-progress-fill blue" [style.width.%]="submissionProgress"></div>
+                </div>
               </div>
               <div class="progress-item">
                 <div class="progress-header">
                   <span>CR validés</span>
                   <span class="progress-value">{{ validatedCRCount }}</span>
                 </div>
-                <p-progressBar [value]="validationProgress" [showValue]="false" styleClass="progress-bar success"></p-progressBar>
+                <div class="custom-progress-bar">
+                  <div class="custom-progress-fill green" [style.width.%]="validationProgress"></div>
+                </div>
               </div>
             }
           </div>
@@ -244,7 +265,10 @@ interface StatCard {
             <h3>Rappel quotidien</h3>
             @if (!hasTodayCR) {
               <p>N'oubliez pas de remplir votre compte rendu du jour !</p>
-              <button pButton label="Remplir maintenant" icon="pi pi-plus" class="p-button-sm" routerLink="/compte-rendu/new"></button>
+              <button class="btn-reminder" pRipple routerLink="/compte-rendu/new">
+                <i class="pi pi-plus"></i>
+                <span>Remplir maintenant</span>
+              </button>
             } @else {
               <p class="success-text"><i class="pi pi-check-circle"></i> Vous avez déjà rempli votre CR aujourd'hui. Continuez ainsi !</p>
             }
@@ -357,10 +381,12 @@ interface StatCard {
 
           <!-- Verse of the Day -->
           <div class="sidebar-card verse-card">
-            <div class="verse-icon">
-              <i class="pi pi-book"></i>
+            <div class="sidebar-card-header verse-header">
+              <div class="verse-icon">
+                <i class="pi pi-book"></i>
+              </div>
+              <h3>Verset du jour</h3>
             </div>
-            <h3>Verset du jour</h3>
             @if (verseLoading) {
               <div class="verse-skeleton">
                 <p-skeleton width="100%" height="1rem" styleClass="mb-2"></p-skeleton>
@@ -560,10 +586,39 @@ interface StatCard {
 
       h2 {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: 1.125rem;
         font-weight: 600;
         color: #1f2937;
       }
+    }
+
+    .section-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+
+      i {
+        font-size: 1rem;
+        color: white;
+      }
+    }
+
+    .section-subtitle {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 0.125rem;
+      display: block;
     }
 
     .view-all-link {
@@ -754,11 +809,42 @@ interface StatCard {
       border: 1px solid #e5e7eb;
 
       h3 {
-        margin: 0 0 1rem;
+        margin: 0;
         font-size: 1rem;
         font-weight: 600;
         color: #1f2937;
       }
+    }
+
+    .sidebar-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .sidebar-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        font-size: 1rem;
+        color: white;
+      }
+    }
+
+    .chart-icon-bg {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .progress-icon-bg {
+      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
     }
 
     .chart-card {
@@ -792,21 +878,29 @@ interface StatCard {
       color: #1f2937;
     }
 
-    ::ng-deep .progress-bar {
-      height: 8px !important;
-      border-radius: 4px !important;
+    .custom-progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
 
-      .p-progressbar-value {
-        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%) !important;
-        border-radius: 4px !important;
+    .custom-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+
+      &.indigo {
+        background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
       }
 
-      &.secondary .p-progressbar-value {
-        background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%) !important;
+      &.blue {
+        background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
       }
 
-      &.success .p-progressbar-value {
-        background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%) !important;
+      &.green {
+        background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
       }
     }
 
@@ -848,10 +942,40 @@ interface StatCard {
       }
     }
 
+    .btn-reminder {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+      transition: all 0.2s ease;
+
+      i {
+        font-size: 0.875rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+      }
+    }
+
     /* Verse Card */
     .verse-card {
       background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
       border-color: #93c5fd;
+
+      .verse-header {
+        margin-bottom: 1rem;
+      }
 
       .verse-icon {
         width: 40px;
@@ -863,7 +987,6 @@ interface StatCard {
         align-items: center;
         justify-content: center;
         font-size: 1.25rem;
-        margin-bottom: 0.75rem;
       }
 
       h3 {
@@ -905,20 +1028,59 @@ interface StatCard {
       text-align: center;
       padding: 3rem;
 
-      i {
-        font-size: 3rem;
-        color: #d1d5db;
-        margin-bottom: 1rem;
+      .empty-icon-wrapper {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 1.25rem;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          font-size: 2rem;
+          color: #6366f1;
+        }
       }
 
       h3 {
         margin: 0 0 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
         color: #374151;
       }
 
       p {
-        margin: 0 0 1rem;
+        margin: 0 0 1.5rem;
         color: #6b7280;
+        font-size: 0.9rem;
+      }
+    }
+
+    .btn-empty-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s ease;
+
+      i {
+        font-size: 0.875rem;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
       }
     }
 
