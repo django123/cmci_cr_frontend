@@ -13,6 +13,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TimelineModule } from 'primeng/timeline';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { CompteRenduFacade, CommentaireFacade } from '../../../../application/use-cases';
 import { CompteRendu, Commentaire, getAuteurFullName, getAuteurInitials } from '../../../../domain/models';
@@ -34,7 +35,8 @@ import { AuthService } from '../../../../infrastructure/auth';
     ToastModule,
     ConfirmDialogModule,
     SkeletonModule,
-    TimelineModule
+    TimelineModule,
+    TranslateModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -71,7 +73,7 @@ import { AuthService } from '../../../../infrastructure/auth';
               </div>
               <div class="hero-info">
                 <div class="hero-title-row">
-                  <h1>Compte Rendu Spirituel</h1>
+                  <h1>{{ 'CR_DETAIL.TITLE' | translate }}</h1>
                   <p-tag
                     [value]="getStatutLabel(compteRendu.statut)"
                     [severity]="getStatutSeverity(compteRendu.statut)"
@@ -89,7 +91,7 @@ import { AuthService } from '../../../../infrastructure/auth';
               @if (canEdit) {
                 <button
                   pButton
-                  label="Modifier"
+                  [label]="'CR_DETAIL.EDIT' | translate"
                   icon="pi pi-pencil"
                   class="btn-edit"
                   (click)="editCR()">
@@ -98,7 +100,7 @@ import { AuthService } from '../../../../infrastructure/auth';
               @if (canSubmit) {
                 <button
                   pButton
-                  label="Soumettre"
+                  [label]="'CR_DETAIL.SUBMIT' | translate"
                   icon="pi pi-send"
                   class="btn-submit"
                   (click)="submitCR()">
@@ -107,7 +109,7 @@ import { AuthService } from '../../../../infrastructure/auth';
               @if (canValidate) {
                 <button
                   pButton
-                  label="Valider"
+                  [label]="'CR_DETAIL.VALIDATE' | translate"
                   icon="pi pi-check-circle"
                   class="btn-validate"
                   (click)="validateCR()">
@@ -122,7 +124,7 @@ import { AuthService } from '../../../../infrastructure/auth';
           <div class="meta-bar-item">
             <i class="pi pi-clock"></i>
             <div class="meta-bar-content">
-              <span class="meta-bar-label">Créé le</span>
+              <span class="meta-bar-label">{{ 'CR_DETAIL.CREATED_ON' | translate }}</span>
               <span class="meta-bar-value">{{ compteRendu.createdAt | date:'dd/MM/yyyy à HH:mm' }}</span>
             </div>
           </div>
@@ -130,7 +132,7 @@ import { AuthService } from '../../../../infrastructure/auth';
           <div class="meta-bar-item">
             <i class="pi pi-refresh"></i>
             <div class="meta-bar-content">
-              <span class="meta-bar-label">Modifié le</span>
+              <span class="meta-bar-label">{{ 'CR_DETAIL.UPDATED_ON' | translate }}</span>
               <span class="meta-bar-value">{{ compteRendu.updatedAt | date:'dd/MM/yyyy à HH:mm' }}</span>
             </div>
           </div>
@@ -138,9 +140,9 @@ import { AuthService } from '../../../../infrastructure/auth';
           <div class="meta-bar-item">
             <i class="pi pi-eye" [class.active]="compteRendu.vuParFd"></i>
             <div class="meta-bar-content">
-              <span class="meta-bar-label">Vu par FD</span>
+              <span class="meta-bar-label">{{ 'CR_DETAIL.VIEWED_BY_FD' | translate }}</span>
               <span class="meta-bar-value" [class.text-success]="compteRendu.vuParFd" [class.text-muted]="!compteRendu.vuParFd">
-                {{ compteRendu.vuParFd ? 'Oui' : 'Non' }}
+                {{ compteRendu.vuParFd ? ('COMMON.YES' | translate) : ('COMMON.NO' | translate) }}
               </span>
             </div>
           </div>
@@ -156,8 +158,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                   <i class="pi pi-heart-fill"></i>
                 </div>
                 <div class="card-title-group">
-                  <h2>Rendez-vous Quotidien avec Dieu</h2>
-                  <p>Votre temps de communion quotidien</p>
+                  <h2>{{ 'CR_DETAIL.RDQD_TITLE' | translate }}</h2>
+                  <p>{{ 'CR_DETAIL.RDQD_SUBTITLE' | translate }}</p>
                 </div>
               </div>
               <div class="card-body-custom">
@@ -172,24 +174,24 @@ import { AuthService } from '../../../../infrastructure/auth';
                     </svg>
                     <div class="rdqd-center">
                       <span class="rdqd-value">{{ compteRendu.rdqd }}</span>
-                      <span class="rdqd-unit">jours</span>
+                      <span class="rdqd-unit">{{ 'COMMON.DAYS' | translate }}</span>
                     </div>
                   </div>
                   <div class="rdqd-details">
                     <div class="rdqd-stat">
                       <span class="rdqd-stat-value">{{ getRdqdPercentage() }}%</span>
-                      <span class="rdqd-stat-label">Taux d'accomplissement</span>
+                      <span class="rdqd-stat-label">{{ 'CR_DETAIL.RDQD_ACHIEVEMENT' | translate }}</span>
                     </div>
                     <div class="rdqd-message" [class.excellent]="getRdqdPercentage() >= 80" [class.good]="getRdqdPercentage() >= 50 && getRdqdPercentage() < 80" [class.needs-improvement]="getRdqdPercentage() < 50">
                       @if (getRdqdPercentage() >= 80) {
                         <i class="pi pi-star-fill"></i>
-                        <span>Excellent ! Continuez ainsi !</span>
+                        <span>{{ 'CR_DETAIL.RDQD_EXCELLENT' | translate }}</span>
                       } @else if (getRdqdPercentage() >= 50) {
                         <i class="pi pi-thumbs-up"></i>
-                        <span>Bon travail, persévérez !</span>
+                        <span>{{ 'CR_DETAIL.RDQD_GOOD' | translate }}</span>
                       } @else {
                         <i class="pi pi-heart"></i>
-                        <span>Chaque effort compte !</span>
+                        <span>{{ 'CR_DETAIL.RDQD_NEEDS_IMPROVEMENT' | translate }}</span>
                       }
                     </div>
                   </div>
@@ -206,8 +208,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                     <i class="pi pi-clock"></i>
                   </div>
                   <div class="card-title-group">
-                    <h2>Temps de prière</h2>
-                    <p>Vos moments de prière</p>
+                    <h2>{{ 'CR_DETAIL.PRAYER_TITLE' | translate }}</h2>
+                    <p>{{ 'CR_DETAIL.PRAYER_SUBTITLE' | translate }}</p>
                   </div>
                 </div>
                 <div class="card-body-custom">
@@ -218,7 +220,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                       </div>
                       <div class="stat-info">
                         <span class="stat-value-large">{{ compteRendu.priereSeule || '00:00' }}</span>
-                        <span class="stat-label-small">Prière seul(e)</span>
+                        <span class="stat-label-small">{{ 'CR_DETAIL.PRAYER_ALONE' | translate }}</span>
                       </div>
                     </div>
                     @if (compteRendu.priereCouple) {
@@ -228,7 +230,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                         </div>
                         <div class="stat-info">
                           <span class="stat-value-large">{{ compteRendu.priereCouple }}</span>
-                          <span class="stat-label-small">En couple</span>
+                          <span class="stat-label-small">{{ 'CR_DETAIL.PRAYER_COUPLE' | translate }}</span>
                         </div>
                       </div>
                     }
@@ -239,7 +241,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                         </div>
                         <div class="stat-info">
                           <span class="stat-value-large">{{ compteRendu.priereAvecEnfants }}</span>
-                          <span class="stat-label-small">Avec enfants</span>
+                          <span class="stat-label-small">{{ 'CR_DETAIL.PRAYER_WITH_CHILDREN' | translate }}</span>
                         </div>
                       </div>
                     }
@@ -250,7 +252,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                         </div>
                         <div class="stat-info">
                           <span class="stat-value-large">{{ compteRendu.priereAutres }}x</span>
-                          <span class="stat-label-small">Autres prières</span>
+                          <span class="stat-label-small">{{ 'CR_DETAIL.PRAYER_OTHER' | translate }}</span>
                         </div>
                       </div>
                     }
@@ -265,8 +267,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                     <i class="pi pi-book"></i>
                   </div>
                   <div class="card-title-group">
-                    <h2>Étude de la Parole</h2>
-                    <p>Votre lecture biblique</p>
+                    <h2>{{ 'CR_DETAIL.STUDY_TITLE' | translate }}</h2>
+                    <p>{{ 'CR_DETAIL.STUDY_SUBTITLE' | translate }}</p>
                   </div>
                 </div>
                 <div class="card-body-custom">
@@ -277,7 +279,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                       </div>
                       <div class="stat-info">
                         <span class="stat-value-large">{{ compteRendu.lectureBiblique || 0 }}</span>
-                        <span class="stat-label-small">Chapitres lus</span>
+                        <span class="stat-label-small">{{ 'CR_DETAIL.BIBLE_CHAPTERS' | translate }}</span>
                       </div>
                     </div>
                     @if (compteRendu.livreBiblique) {
@@ -287,7 +289,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                         </div>
                         <div class="stat-info">
                           <span class="stat-value-large text-book">{{ compteRendu.livreBiblique }}</span>
-                          <span class="stat-label-small">Livre de la Bible</span>
+                          <span class="stat-label-small">{{ 'CR_DETAIL.BIBLE_BOOK' | translate }}</span>
                         </div>
                       </div>
                     }
@@ -298,7 +300,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                         </div>
                         <div class="stat-info">
                           <span class="stat-value-large">{{ compteRendu.litteraturePages }}<span class="stat-total">/{{ compteRendu.litteratureTotal || '?' }}</span></span>
-                          <span class="stat-label-small">Pages littérature</span>
+                          <span class="stat-label-small">{{ 'CR_DETAIL.LITERATURE_PAGES' | translate }}</span>
                         </div>
                       </div>
                     }
@@ -314,8 +316,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                   <i class="pi pi-star"></i>
                 </div>
                 <div class="card-title-group">
-                  <h2>Pratiques spirituelles</h2>
-                  <p>Vos engagements du jour</p>
+                  <h2>{{ 'CR_DETAIL.PRACTICES_TITLE' | translate }}</h2>
+                  <p>{{ 'CR_DETAIL.PRACTICES_SUBTITLE' | translate }}</p>
                 </div>
               </div>
               <div class="card-body-custom">
@@ -324,24 +326,24 @@ import { AuthService } from '../../../../infrastructure/auth';
                     <div class="practice-icon-wrapper">
                       <i class="pi" [ngClass]="compteRendu.confession ? 'pi-check' : 'pi-times'"></i>
                     </div>
-                    <span class="practice-label">Confession</span>
-                    <span class="practice-status">{{ compteRendu.confession ? 'Fait' : 'Non fait' }}</span>
+                    <span class="practice-label">{{ 'CR_DETAIL.CONFESSION' | translate }}</span>
+                    <span class="practice-status">{{ compteRendu.confession ? ('COMMON.DONE' | translate) : ('COMMON.NOT_DONE' | translate) }}</span>
                   </div>
 
                   <div class="practice-card" [class.active]="compteRendu.jeune" [class.inactive]="!compteRendu.jeune">
                     <div class="practice-icon-wrapper">
                       <i class="pi" [ngClass]="compteRendu.jeune ? 'pi-check' : 'pi-times'"></i>
                     </div>
-                    <span class="practice-label">Jeûne</span>
-                    <span class="practice-status">{{ compteRendu.jeune ? (compteRendu.typeJeune || 'Fait') : 'Non fait' }}</span>
+                    <span class="practice-label">{{ 'CR_DETAIL.FASTING' | translate }}</span>
+                    <span class="practice-status">{{ compteRendu.jeune ? (compteRendu.typeJeune || ('COMMON.DONE' | translate)) : ('COMMON.NOT_DONE' | translate) }}</span>
                   </div>
 
                   <div class="practice-card" [class.active]="compteRendu.offrande" [class.inactive]="!compteRendu.offrande">
                     <div class="practice-icon-wrapper">
                       <i class="pi" [ngClass]="compteRendu.offrande ? 'pi-check' : 'pi-times'"></i>
                     </div>
-                    <span class="practice-label">Offrande</span>
-                    <span class="practice-status">{{ compteRendu.offrande ? 'Fait' : 'Non fait' }}</span>
+                    <span class="practice-label">{{ 'CR_DETAIL.OFFERING' | translate }}</span>
+                    <span class="practice-status">{{ compteRendu.offrande ? ('COMMON.DONE' | translate) : ('COMMON.NOT_DONE' | translate) }}</span>
                   </div>
 
                   <div class="practice-card evangelisation" [class.active]="compteRendu.evangelisation && compteRendu.evangelisation > 0" [class.inactive]="!compteRendu.evangelisation || compteRendu.evangelisation === 0">
@@ -352,8 +354,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                         <i class="pi pi-times"></i>
                       }
                     </div>
-                    <span class="practice-label">Évangélisation</span>
-                    <span class="practice-status">{{ compteRendu.evangelisation ? compteRendu.evangelisation + ' personne(s)' : 'Non fait' }}</span>
+                    <span class="practice-label">{{ 'CR_DETAIL.EVANGELIZATION' | translate }}</span>
+                    <span class="practice-status">{{ compteRendu.evangelisation ? compteRendu.evangelisation + ' ' + ('COMMON.PERSONS' | translate) : ('COMMON.NOT_DONE' | translate) }}</span>
                   </div>
                 </div>
               </div>
@@ -367,8 +369,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                     <i class="pi pi-pencil"></i>
                   </div>
                   <div class="card-title-group">
-                    <h2>Notes personnelles</h2>
-                    <p>Vos réflexions et prières</p>
+                    <h2>{{ 'CR_DETAIL.NOTES_TITLE' | translate }}</h2>
+                    <p>{{ 'CR_DETAIL.NOTES_SUBTITLE' | translate }}</p>
                   </div>
                 </div>
                 <div class="card-body-custom">
@@ -386,7 +388,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                 <div class="card-icon comments-icon">
                   <i class="pi pi-comments"></i>
                 </div>
-                <h3>Commentaires</h3>
+                <h3>{{ 'CR_DETAIL.COMMENTS_TITLE' | translate }}</h3>
                 <span class="comment-count">{{ commentaires.length }}</span>
               </div>
               <div class="card-body-custom">
@@ -411,8 +413,8 @@ import { AuthService } from '../../../../infrastructure/auth';
                       <div class="no-comments-icon">
                         <i class="pi pi-comments"></i>
                       </div>
-                      <p>Aucun commentaire</p>
-                      <span>Soyez le premier à commenter</span>
+                      <p>{{ 'CR_DETAIL.NO_COMMENTS' | translate }}</p>
+                      <span>{{ 'CR_DETAIL.BE_FIRST_COMMENT' | translate }}</span>
                     </div>
                   }
                 </div>
@@ -423,7 +425,7 @@ import { AuthService } from '../../../../infrastructure/auth';
                       pInputTextarea
                       [(ngModel)]="newComment"
                       [rows]="2"
-                      placeholder="Écrire un commentaire..."
+                      [placeholder]="'CR_DETAIL.COMMENT_PLACEHOLDER' | translate"
                       class="comment-input">
                     </textarea>
                     <button
@@ -1311,6 +1313,7 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
 
   compteRendu: CompteRendu | null = null;
   commentaires: Commentaire[] = [];
@@ -1350,8 +1353,8 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
         this.loading = false;
         this.messageService.add({
           severity: 'error',
-          summary: 'Erreur',
-          detail: 'Impossible de charger le compte rendu'
+          summary: this.translate.instant('COMMON.ERROR'),
+          detail: this.translate.instant('CR_DETAIL.ERROR_LOAD')
         });
       }
     });

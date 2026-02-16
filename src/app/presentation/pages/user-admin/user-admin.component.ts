@@ -12,6 +12,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -35,7 +36,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
     DialogModule,
     DropdownModule,
     AvatarModule,
-    SkeletonModule
+    SkeletonModule,
+    TranslateModule
   ],
   providers: [MessageService],
   template: `
@@ -45,8 +47,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1>Administration des Utilisateurs</h1>
-          <p>Gerez les roles et les permissions des utilisateurs</p>
+          <h1>{{ 'USERS.TITLE' | translate }}</h1>
+          <p>{{ 'USERS.SUBTITLE' | translate }}</p>
         </div>
         <div class="header-actions">
           <button
@@ -54,7 +56,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
             class="btn-refresh"
             (click)="refreshData()">
             <i class="pi pi-refresh"></i>
-            <span>Actualiser</span>
+            <span>{{ 'COMMON.REFRESH' | translate }}</span>
           </button>
         </div>
       </div>
@@ -67,7 +69,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ statistics?.totalUsers || 0 }}</span>
-            <span class="stat-label">Total Utilisateurs</span>
+            <span class="stat-label">{{ 'USERS.TOTAL_USERS' | translate }}</span>
           </div>
         </div>
 
@@ -77,7 +79,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ pendingCount }}</span>
-            <span class="stat-label">En attente</span>
+            <span class="stat-label">{{ 'USERS.PENDING' | translate }}</span>
           </div>
         </div>
 
@@ -87,7 +89,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ statistics?.roleDistribution?.['FD'] || 0 }}</span>
-            <span class="stat-label">Faiseurs de Disciples</span>
+            <span class="stat-label">{{ 'USERS.FD_COUNT' | translate }}</span>
           </div>
         </div>
 
@@ -97,7 +99,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ statistics?.roleDistribution?.['PASTEUR'] || 0 }}</span>
-            <span class="stat-label">Pasteurs</span>
+            <span class="stat-label">{{ 'USERS.PASTORS_COUNT' | translate }}</span>
           </div>
         </div>
       </div>
@@ -110,7 +112,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
             type="text"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchChange($event)"
-            placeholder="Rechercher un utilisateur..."
+            [placeholder]="'USERS.SEARCH_PLACEHOLDER' | translate"
             class="search-input" />
           @if (searchQuery) {
             <button type="button" class="clear-btn" (click)="searchQuery = ''; onSearchChange('')">
@@ -123,7 +125,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           <p-dropdown
             [options]="roleOptions"
             [(ngModel)]="selectedRole"
-            placeholder="Filtrer par role"
+            [placeholder]="'USERS.FILTER_BY_ROLE' | translate"
             [showClear]="true"
             (onChange)="onRoleFilterChange($event)"
             styleClass="filter-select">
@@ -146,7 +148,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 25, 50]"
             [showCurrentPageReport]="true"
-            currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} utilisateurs"
+            [currentPageReportTemplate]="'USERS.PAGINATION' | translate"
             styleClass="p-datatable-striped">
 
             <ng-template pTemplate="header">
@@ -154,40 +156,40 @@ import { Role, RoleLabels } from '../../../domain/enums';
                 <th pSortableColumn="nomComplet" style="width: 25%">
                   <div class="th-content">
                     <i class="pi pi-user"></i>
-                    <span>Utilisateur</span>
+                    <span>{{ 'USERS.USER' | translate }}</span>
                     <p-sortIcon field="nomComplet"></p-sortIcon>
                   </div>
                 </th>
                 <th pSortableColumn="email" style="width: 22%">
                   <div class="th-content">
                     <i class="pi pi-envelope"></i>
-                    <span>Email</span>
+                    <span>{{ 'USERS.EMAIL' | translate }}</span>
                     <p-sortIcon field="email"></p-sortIcon>
                   </div>
                 </th>
                 <th pSortableColumn="role" style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-shield"></i>
-                    <span>Role</span>
+                    <span>{{ 'USERS.ROLE' | translate }}</span>
                     <p-sortIcon field="role"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 13%">
                   <div class="th-content">
                     <i class="pi pi-circle-fill"></i>
-                    <span>Statut</span>
+                    <span>{{ 'USERS.STATUS' | translate }}</span>
                   </div>
                 </th>
                 <th pSortableColumn="createdAt" style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-calendar"></i>
-                    <span>Inscription</span>
+                    <span>{{ 'USERS.REGISTRATION' | translate }}</span>
                     <p-sortIcon field="createdAt"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 10%; text-align: right">
                   <div class="th-content" style="justify-content: flex-end">
-                    <span>Actions</span>
+                    <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                   </div>
                 </th>
               </tr>
@@ -223,7 +225,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                       pButton
                       icon="pi pi-pencil"
                       class="p-button-text p-button-rounded"
-                      pTooltip="Modifier le role"
+                      [pTooltip]="'USERS.EDIT_ROLE_TOOLTIP' | translate"
                       tooltipPosition="top"
                       (click)="openRoleDialog(user)">
                     </button>
@@ -237,8 +239,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
                 <td colspan="6" class="empty-message">
                   <div class="empty-state">
                     <i class="pi pi-users"></i>
-                    <h3>Aucun utilisateur trouve</h3>
-                    <p>Modifiez vos criteres de recherche</p>
+                    <h3>{{ 'USERS.NO_USERS_TITLE' | translate }}</h3>
+                    <p>{{ 'USERS.NO_USERS_MESSAGE' | translate }}</p>
                   </div>
                 </td>
               </tr>
@@ -249,7 +251,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
 
       <!-- Role Assignment Dialog -->
       <p-dialog
-        header="Modifier le role"
+        [header]="'USERS.EDIT_ROLE_TOOLTIP' | translate"
         [(visible)]="showRoleDialog"
         [modal]="true"
         [style]="{ width: '440px' }"
@@ -267,11 +269,11 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
 
           <div class="form-field">
-            <label>Nouveau role <span class="required">*</span></label>
+            <label>{{ 'USERS.NEW_ROLE' | translate }} <span class="required">*</span></label>
             <p-dropdown
               [options]="assignableRoles"
               [(ngModel)]="newRole"
-              placeholder="Selectionner un role"
+              [placeholder]="'USERS.SELECT_ROLE' | translate"
               appendTo="body"
               styleClass="w-full dialog-dropdown">
             </p-dropdown>
@@ -281,11 +283,11 @@ import { Role, RoleLabels } from '../../../domain/enums';
           <div class="dialog-footer">
             <button type="button" class="btn-dialog-cancel" (click)="showRoleDialog = false">
               <i class="pi pi-times"></i>
-              <span>Annuler</span>
+              <span>{{ 'COMMON.CANCEL' | translate }}</span>
             </button>
             <button type="button" class="btn-dialog-save" [disabled]="!newRole" (click)="confirmRoleChange()">
               <i class="pi pi-check"></i>
-              <span>Confirmer</span>
+              <span>{{ 'COMMON.CONFIRM' | translate }}</span>
             </button>
           </div>
         </ng-template>
@@ -986,6 +988,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
 export class UserAdminComponent implements OnInit, OnDestroy {
   private readonly facade = inject(UserAdminFacade);
   private readonly messageService = inject(MessageService);
+  private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
   private readonly searchSubject = new Subject<string>();
 
@@ -1013,22 +1016,27 @@ export class UserAdminComponent implements OnInit, OnDestroy {
   newRole: string | null = null;
 
   // Options
-  roleOptions = [
-    { label: 'Fidele', value: 'FIDELE' },
-    { label: 'Faiseur de Disciples', value: 'FD' },
-    { label: 'Leader', value: 'LEADER' },
-    { label: 'Pasteur', value: 'PASTEUR' },
-    { label: 'Administrateur', value: 'ADMIN' }
-  ];
+  roleOptions: { label: string; value: string }[] = [];
 
-  assignableRoles = [
-    { label: 'Fidele', value: 'FIDELE' },
-    { label: 'Faiseur de Disciples', value: 'FD' },
-    { label: 'Leader', value: 'LEADER' },
-    { label: 'Pasteur', value: 'PASTEUR' }
-  ];
+  assignableRoles: { label: string; value: string }[] = [];
 
   ngOnInit(): void {
+    // Initialize role options with translations
+    this.roleOptions = [
+      { label: this.translate.instant('USERS.ROLE_FIDELE'), value: 'FIDELE' },
+      { label: this.translate.instant('USERS.ROLE_FD'), value: 'FD' },
+      { label: this.translate.instant('USERS.ROLE_LEADER'), value: 'LEADER' },
+      { label: this.translate.instant('USERS.ROLE_PASTEUR'), value: 'PASTEUR' },
+      { label: this.translate.instant('USERS.ROLE_ADMIN'), value: 'ADMIN' }
+    ];
+
+    this.assignableRoles = [
+      { label: this.translate.instant('USERS.ROLE_FIDELE'), value: 'FIDELE' },
+      { label: this.translate.instant('USERS.ROLE_FD'), value: 'FD' },
+      { label: this.translate.instant('USERS.ROLE_LEADER'), value: 'LEADER' },
+      { label: this.translate.instant('USERS.ROLE_PASTEUR'), value: 'PASTEUR' }
+    ];
+
     // Subscribe to state
     this.facade.loading$.pipe(takeUntil(this.destroy$))
       .subscribe(loading => this.isLoading = loading);
@@ -1109,8 +1117,8 @@ export class UserAdminComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Succes',
-          detail: `Role modifie avec succes`
+          summary: this.translate.instant('COMMON.SUCCESS'),
+          detail: this.translate.instant('USERS.ROLE_CHANGED')
         });
         this.showRoleDialog = false;
         this.facade.loadStatistics();
@@ -1118,7 +1126,7 @@ export class UserAdminComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Erreur',
+          summary: this.translate.instant('COMMON.ERROR'),
           detail: err.message
         });
       }

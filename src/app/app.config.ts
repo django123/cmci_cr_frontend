@@ -7,13 +7,18 @@ import { KeycloakService, KeycloakAngularModule } from 'keycloak-angular';
 import Aura from '@primeuix/themes/aura';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
+import localEn from '@angular/common/locales/en';
+import { importProvidersFrom } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { initializeKeycloak } from './infrastructure/auth/keycloak-init.factory';
 import { AuthInterceptor } from './infrastructure/auth/auth.interceptor';
 
-// Enregistrer la locale française
+// Enregistrer les locales
 registerLocaleData(localeFr);
+registerLocaleData(localEn);
 
 // Repositories (Injection de dépendances - principes SOLID)
 import { CompteRenduRepository, CommentaireRepository, StatisticsRepository, AuthRepository, SubordinatesRepository, DiscipleRepository, UserAdminRepository, EgliseMaisonRepository } from './domain/repositories';
@@ -69,7 +74,18 @@ export const appConfig: ApplicationConfig = {
     { provide: EgliseMaisonRepository, useClass: EgliseMaisonHttpRepository },
     { provide: AuthRepository, useClass: AuthService },
 
-    // Locale française pour les pipes de date
-    { provide: LOCALE_ID, useValue: 'fr-FR' }
+    // Locale par défaut
+    { provide: LOCALE_ID, useValue: 'fr-FR' },
+
+    // ngx-translate
+    importProvidersFrom(
+      TranslateModule.forRoot({
+        defaultLanguage: 'fr'
+      })
+    ),
+    provideTranslateHttpLoader({
+      prefix: './assets/i18n/',
+      suffix: '.json'
+    })
   ]
 };

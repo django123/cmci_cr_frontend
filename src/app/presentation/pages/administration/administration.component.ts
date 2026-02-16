@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { TableModule } from 'primeng/table';
 import { TabViewModule } from 'primeng/tabview';
@@ -38,7 +39,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
     ConfirmDialogModule,
     TooltipModule,
     TagModule,
-    SkeletonModule
+    SkeletonModule,
+    TranslateModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -50,7 +52,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       <div class="page-header">
         <div class="header-content">
           <h1>Administration</h1>
-          <p>Gestion de la hierarchie ecclesiale : Regions, Zones, Eglises Locales et Eglises de Maison</p>
+          <p>{{ 'ADMIN.SUBTITLE' | translate }}</p>
         </div>
         <div class="header-actions">
           <button
@@ -59,17 +61,17 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
             [class.loading]="isSeedLoading"
             [disabled]="isSeedLoading"
             (click)="seedGeography()"
-            pTooltip="Importer les regions et zones depuis RestCountries"
+            [pTooltip]="'ADMIN.SEED_TOOLTIP' | translate"
             tooltipPosition="left">
             <i class="pi pi-globe"></i>
-            <span>{{ isSeedLoading ? 'Importation...' : 'Seed Geographique' }}</span>
+            <span>{{ isSeedLoading ? ('ADMIN.SEED_LOADING' | translate) : ('ADMIN.SEED_LABEL' | translate) }}</span>
           </button>
           <button
             type="button"
             class="btn-refresh"
             (click)="refreshCurrentTab()">
             <i class="pi pi-refresh"></i>
-            <span>Actualiser</span>
+            <span>{{ 'COMMON.REFRESH' | translate }}</span>
           </button>
         </div>
       </div>
@@ -82,7 +84,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ regions.length }}</span>
-            <span class="stat-label">Regions</span>
+            <span class="stat-label">{{ 'ADMIN.REGIONS' | translate }}</span>
           </div>
         </div>
 
@@ -92,7 +94,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ zones.length }}</span>
-            <span class="stat-label">Zones</span>
+            <span class="stat-label">{{ 'ADMIN.ZONES' | translate }}</span>
           </div>
         </div>
 
@@ -102,7 +104,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ eglisesLocales.length }}</span>
-            <span class="stat-label">Eglises Locales</span>
+            <span class="stat-label">{{ 'ADMIN.LOCAL_CHURCHES' | translate }}</span>
           </div>
         </div>
 
@@ -112,7 +114,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ eglisesMaison.length }}</span>
-            <span class="stat-label">Eglises de Maison</span>
+            <span class="stat-label">{{ 'ADMIN.HOUSE_CHURCHES' | translate }}</span>
           </div>
         </div>
       </div>
@@ -121,7 +123,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
       <p-tabView (onChange)="onTabChange($event)" [(activeIndex)]="activeTab">
 
         <!-- ==================== TAB REGIONS ==================== -->
-        <p-tabPanel header="Regions">
+        <p-tabPanel [header]="'ADMIN.REGIONS' | translate">
           <!-- Filters -->
           <div class="filters-bar">
             <div class="search-box">
@@ -129,7 +131,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               <input
                 type="text"
                 [(ngModel)]="regionSearch"
-                placeholder="Rechercher une region par nom ou code..."
+                [placeholder]="'ADMIN.SEARCH_REGION' | translate"
                 class="search-input" />
               @if (regionSearch) {
                 <button type="button" class="clear-btn" (click)="regionSearch = ''">
@@ -143,7 +145,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               class="btn-create"
               (click)="openRegionDialog()">
               <i class="pi pi-plus"></i>
-              <span>Nouvelle Region</span>
+              <span>{{ 'ADMIN.NEW_REGION' | translate }}</span>
             </button>
           </div>
 
@@ -162,7 +164,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                 [rows]="10"
                 [rowsPerPageOptions]="[5, 10, 25, 50]"
                 [showCurrentPageReport]="true"
-                currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} regions"
+                [currentPageReportTemplate]="'ADMIN.PAGINATION_REGIONS' | translate"
                 styleClass="p-datatable-striped">
 
                 <ng-template pTemplate="header">
@@ -170,27 +172,27 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <th pSortableColumn="nom" style="width: 40%">
                       <div class="th-content">
                         <i class="pi pi-globe"></i>
-                        <span>Nom</span>
+                        <span>{{ 'ADMIN.NAME' | translate }}</span>
                         <p-sortIcon field="nom"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="code" style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-hashtag"></i>
-                        <span>Code</span>
+                        <span>{{ 'ADMIN.CODE' | translate }}</span>
                         <p-sortIcon field="code"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="nombreZones" style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-map"></i>
-                        <span>Zones</span>
+                        <span>{{ 'ADMIN.ZONES' | translate }}</span>
                         <p-sortIcon field="nombreZones"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 20%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -214,8 +216,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     </td>
                     <td>
                       <div class="actions-cell">
-                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" tooltipPosition="top" (click)="openRegionDialog(region)"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" tooltipPosition="top" (click)="confirmDeleteRegion(region)"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" [pTooltip]="'COMMON.EDIT' | translate" tooltipPosition="top" (click)="openRegionDialog(region)"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" [pTooltip]="'COMMON.DELETE' | translate" tooltipPosition="top" (click)="confirmDeleteRegion(region)"></button>
                       </div>
                     </td>
                   </tr>
@@ -226,8 +228,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <td colspan="4" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-globe"></i>
-                        <h3>Aucune region trouvee</h3>
-                        <p>Cliquez sur "Seed Geographique" pour importer les regions et zones depuis l'API RestCountries</p>
+                        <h3>{{ 'ADMIN.NO_REGIONS_TITLE' | translate }}</h3>
+                        <p>{{ 'ADMIN.NO_REGIONS_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -238,14 +240,14 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
         </p-tabPanel>
 
         <!-- ==================== TAB ZONES ==================== -->
-        <p-tabPanel header="Zones">
+        <p-tabPanel [header]="'ADMIN.ZONES' | translate">
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
                 type="text"
                 [(ngModel)]="zoneSearch"
-                placeholder="Rechercher une zone..."
+                [placeholder]="'ADMIN.SEARCH_ZONE' | translate"
                 class="search-input" />
               @if (zoneSearch) {
                 <button type="button" class="clear-btn" (click)="zoneSearch = ''">
@@ -258,10 +260,10 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               <p-dropdown
                 [options]="regionOptions"
                 [(ngModel)]="selectedRegionFilter"
-                placeholder="Toutes les regions"
+                [placeholder]="'ADMIN.ALL_REGIONS' | translate"
                 [showClear]="true"
                 [filter]="true"
-                filterPlaceholder="Rechercher..."
+                [filterPlaceholder]="'ADMIN.FILTER_SEARCH' | translate"
                 optionLabel="label"
                 optionValue="value"
                 (onChange)="onRegionFilterChange()"
@@ -274,7 +276,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               class="btn-create"
               (click)="openZoneDialog()">
               <i class="pi pi-plus"></i>
-              <span>Nouvelle Zone</span>
+              <span>{{ 'ADMIN.NEW_ZONE' | translate }}</span>
             </button>
           </div>
 
@@ -292,7 +294,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                 [rows]="10"
                 [rowsPerPageOptions]="[5, 10, 25, 50]"
                 [showCurrentPageReport]="true"
-                currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} zones"
+                [currentPageReportTemplate]="'ADMIN.PAGINATION_ZONES' | translate"
                 styleClass="p-datatable-striped">
 
                 <ng-template pTemplate="header">
@@ -300,27 +302,27 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <th pSortableColumn="nom" style="width: 35%">
                       <div class="th-content">
                         <i class="pi pi-map"></i>
-                        <span>Nom</span>
+                        <span>{{ 'ADMIN.NAME' | translate }}</span>
                         <p-sortIcon field="nom"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="regionNom" style="width: 25%">
                       <div class="th-content">
                         <i class="pi pi-globe"></i>
-                        <span>Region</span>
+                        <span>{{ 'ADMIN.REGION' | translate }}</span>
                         <p-sortIcon field="regionNom"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="nombreEglisesLocales" style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-building"></i>
-                        <span>Eglises Locales</span>
+                        <span>{{ 'ADMIN.LOCAL_CHURCHES' | translate }}</span>
                         <p-sortIcon field="nombreEglisesLocales"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 20%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -344,8 +346,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     </td>
                     <td>
                       <div class="actions-cell">
-                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" tooltipPosition="top" (click)="openZoneDialog(zone)"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" tooltipPosition="top" (click)="confirmDeleteZone(zone)"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" [pTooltip]="'COMMON.EDIT' | translate" tooltipPosition="top" (click)="openZoneDialog(zone)"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" [pTooltip]="'COMMON.DELETE' | translate" tooltipPosition="top" (click)="confirmDeleteZone(zone)"></button>
                       </div>
                     </td>
                   </tr>
@@ -356,8 +358,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <td colspan="4" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-map"></i>
-                        <h3>Aucune zone trouvee</h3>
-                        <p>Modifiez vos criteres de recherche ou creez une nouvelle zone</p>
+                        <h3>{{ 'ADMIN.NO_ZONES_TITLE' | translate }}</h3>
+                        <p>{{ 'ADMIN.NO_ZONES_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -368,14 +370,14 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
         </p-tabPanel>
 
         <!-- ==================== TAB EGLISES LOCALES ==================== -->
-        <p-tabPanel header="Eglises Locales">
+        <p-tabPanel [header]="'ADMIN.LOCAL_CHURCHES' | translate">
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
                 type="text"
                 [(ngModel)]="egliseLocaleSearch"
-                placeholder="Rechercher une eglise locale..."
+                [placeholder]="'ADMIN.SEARCH_LOCAL_CHURCH' | translate"
                 class="search-input" />
               @if (egliseLocaleSearch) {
                 <button type="button" class="clear-btn" (click)="egliseLocaleSearch = ''">
@@ -388,10 +390,10 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               <p-dropdown
                 [options]="zoneOptions"
                 [(ngModel)]="selectedZoneFilter"
-                placeholder="Toutes les zones"
+                [placeholder]="'ADMIN.ALL_ZONES' | translate"
                 [showClear]="true"
                 [filter]="true"
-                filterPlaceholder="Rechercher..."
+                [filterPlaceholder]="'ADMIN.FILTER_SEARCH' | translate"
                 optionLabel="label"
                 optionValue="value"
                 (onChange)="onZoneFilterChange()"
@@ -404,7 +406,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               class="btn-create"
               (click)="openEgliseLocaleDialog()">
               <i class="pi pi-plus"></i>
-              <span>Nouvelle Eglise</span>
+              <span>{{ 'ADMIN.NEW_CHURCH' | translate }}</span>
             </button>
           </div>
 
@@ -422,7 +424,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                 [rows]="10"
                 [rowsPerPageOptions]="[5, 10, 25, 50]"
                 [showCurrentPageReport]="true"
-                currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} eglises locales"
+                [currentPageReportTemplate]="'ADMIN.PAGINATION_LOCAL_CHURCHES' | translate"
                 styleClass="p-datatable-striped">
 
                 <ng-template pTemplate="header">
@@ -430,39 +432,39 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <th pSortableColumn="nom" style="width: 25%">
                       <div class="th-content">
                         <i class="pi pi-building"></i>
-                        <span>Nom</span>
+                        <span>{{ 'ADMIN.NAME' | translate }}</span>
                         <p-sortIcon field="nom"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="zoneNom" style="width: 18%">
                       <div class="th-content">
                         <i class="pi pi-map"></i>
-                        <span>Zone</span>
+                        <span>{{ 'ADMIN.ZONE' | translate }}</span>
                         <p-sortIcon field="zoneNom"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-map-marker"></i>
-                        <span>Adresse</span>
+                        <span>{{ 'ADMIN.ADDRESS' | translate }}</span>
                       </div>
                     </th>
                     <th style="width: 15%">
                       <div class="th-content">
                         <i class="pi pi-user"></i>
-                        <span>Pasteur</span>
+                        <span>{{ 'ADMIN.PASTOR' | translate }}</span>
                       </div>
                     </th>
                     <th pSortableColumn="nombreEglisesMaison" style="width: 10%">
                       <div class="th-content">
                         <i class="pi pi-home"></i>
-                        <span>Maisons</span>
+                        <span>{{ 'ADMIN.HOUSES' | translate }}</span>
                         <p-sortIcon field="nombreEglisesMaison"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 12%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -497,8 +499,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     </td>
                     <td>
                       <div class="actions-cell">
-                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" tooltipPosition="top" (click)="openEgliseLocaleDialog(eglise)"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" tooltipPosition="top" (click)="confirmDeleteEgliseLocale(eglise)"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" [pTooltip]="'COMMON.EDIT' | translate" tooltipPosition="top" (click)="openEgliseLocaleDialog(eglise)"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" [pTooltip]="'COMMON.DELETE' | translate" tooltipPosition="top" (click)="confirmDeleteEgliseLocale(eglise)"></button>
                       </div>
                     </td>
                   </tr>
@@ -509,8 +511,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <td colspan="6" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-building"></i>
-                        <h3>Aucune eglise locale trouvee</h3>
-                        <p>Modifiez vos criteres de recherche ou creez une nouvelle eglise locale</p>
+                        <h3>{{ 'ADMIN.NO_LOCAL_CHURCHES_TITLE' | translate }}</h3>
+                        <p>{{ 'ADMIN.NO_LOCAL_CHURCHES_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -521,14 +523,14 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
         </p-tabPanel>
 
         <!-- ==================== TAB EGLISES DE MAISON ==================== -->
-        <p-tabPanel header="Eglises de Maison">
+        <p-tabPanel [header]="'ADMIN.HOUSE_CHURCHES' | translate">
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
                 type="text"
                 [(ngModel)]="egliseMaisonSearch"
-                placeholder="Rechercher une eglise de maison..."
+                [placeholder]="'ADMIN.SEARCH_HOUSE_CHURCH' | translate"
                 class="search-input" />
               @if (egliseMaisonSearch) {
                 <button type="button" class="clear-btn" (click)="egliseMaisonSearch = ''">
@@ -541,10 +543,10 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               <p-dropdown
                 [options]="egliseLocaleOptions"
                 [(ngModel)]="selectedEgliseLocaleFilter"
-                placeholder="Toutes les eglises locales"
+                [placeholder]="'ADMIN.ALL_LOCAL_CHURCHES' | translate"
                 [showClear]="true"
                 [filter]="true"
-                filterPlaceholder="Rechercher..."
+                [filterPlaceholder]="'ADMIN.FILTER_SEARCH' | translate"
                 optionLabel="label"
                 optionValue="value"
                 (onChange)="onEgliseLocaleFilterChange()"
@@ -557,7 +559,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
               class="btn-create"
               (click)="openEgliseMaisonDialog()">
               <i class="pi pi-plus"></i>
-              <span>Nouvelle Eglise</span>
+              <span>{{ 'ADMIN.NEW_CHURCH' | translate }}</span>
             </button>
           </div>
 
@@ -575,7 +577,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                 [rows]="10"
                 [rowsPerPageOptions]="[5, 10, 25, 50]"
                 [showCurrentPageReport]="true"
-                currentPageReportTemplate="Affichage {first} a {last} sur {totalRecords} eglises de maison"
+                [currentPageReportTemplate]="'ADMIN.PAGINATION_HOUSE_CHURCHES' | translate"
                 styleClass="p-datatable-striped">
 
                 <ng-template pTemplate="header">
@@ -583,39 +585,39 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <th pSortableColumn="nom" style="width: 22%">
                       <div class="th-content">
                         <i class="pi pi-home"></i>
-                        <span>Nom</span>
+                        <span>{{ 'ADMIN.NAME' | translate }}</span>
                         <p-sortIcon field="nom"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="egliseLocaleNom" style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-building"></i>
-                        <span>Eglise Locale</span>
+                        <span>{{ 'ADMIN.LOCAL_CHURCH' | translate }}</span>
                         <p-sortIcon field="egliseLocaleNom"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 18%">
                       <div class="th-content">
                         <i class="pi pi-user"></i>
-                        <span>Leader</span>
+                        <span>{{ 'ADMIN.LEADER' | translate }}</span>
                       </div>
                     </th>
                     <th style="width: 18%">
                       <div class="th-content">
                         <i class="pi pi-map-marker"></i>
-                        <span>Adresse</span>
+                        <span>{{ 'ADMIN.ADDRESS' | translate }}</span>
                       </div>
                     </th>
                     <th pSortableColumn="nombreFideles" style="width: 10%">
                       <div class="th-content">
                         <i class="pi pi-users"></i>
-                        <span>Fideles</span>
+                        <span>{{ 'ADMIN.FAITHFUL_COUNT' | translate }}</span>
                         <p-sortIcon field="nombreFideles"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 12%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -650,8 +652,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     </td>
                     <td>
                       <div class="actions-cell">
-                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" tooltipPosition="top" (click)="openEgliseMaisonDialog(eglise)"></button>
-                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" tooltipPosition="top" (click)="confirmDeleteEgliseMaison(eglise)"></button>
+                        <button pButton icon="pi pi-pencil" class="p-button-text p-button-rounded" [pTooltip]="'COMMON.EDIT' | translate" tooltipPosition="top" (click)="openEgliseMaisonDialog(eglise)"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" [pTooltip]="'COMMON.DELETE' | translate" tooltipPosition="top" (click)="confirmDeleteEgliseMaison(eglise)"></button>
                       </div>
                     </td>
                   </tr>
@@ -662,8 +664,8 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
                     <td colspan="6" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-home"></i>
-                        <h3>Aucune eglise de maison trouvee</h3>
-                        <p>Modifiez vos criteres de recherche ou creez une nouvelle eglise de maison</p>
+                        <h3>{{ 'ADMIN.NO_HOUSE_CHURCHES_TITLE' | translate }}</h3>
+                        <p>{{ 'ADMIN.NO_HOUSE_CHURCHES_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -677,7 +679,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
 
     <!-- ==================== DIALOG REGION ==================== -->
     <p-dialog
-      [header]="editingRegion ? 'Modifier la region' : 'Nouvelle region'"
+      [header]="editingRegion ? ('ADMIN.EDIT_REGION' | translate) : ('ADMIN.CREATE_REGION' | translate)"
       [(visible)]="showRegionDialog"
       [modal]="true"
       [style]="{ width: '480px' }"
@@ -696,23 +698,23 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
           </div>
         }
         <div class="form-field">
-          <label for="regionNom">Nom de la region <span class="required">*</span></label>
-          <input id="regionNom" type="text" pInputText [(ngModel)]="regionForm.nom" placeholder="Ex: Afrique, Europe..." class="w-full" />
+          <label for="regionNom">{{ 'ADMIN.REGION_NAME' | translate }} <span class="required">*</span></label>
+          <input id="regionNom" type="text" pInputText [(ngModel)]="regionForm.nom" [placeholder]="'ADMIN.REGION_NAME_PLACEHOLDER' | translate" class="w-full" />
         </div>
         <div class="form-field">
-          <label for="regionCode">Code <span class="required">*</span></label>
-          <input id="regionCode" type="text" pInputText [(ngModel)]="regionForm.code" placeholder="Ex: AFR, EUR..." class="w-full" maxlength="10" style="text-transform: uppercase" />
+          <label for="regionCode">{{ 'ADMIN.CODE' | translate }} <span class="required">*</span></label>
+          <input id="regionCode" type="text" pInputText [(ngModel)]="regionForm.code" [placeholder]="'ADMIN.CODE_PLACEHOLDER' | translate" class="w-full" maxlength="10" style="text-transform: uppercase" />
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
           <button type="button" class="btn-dialog-cancel" (click)="showRegionDialog = false">
             <i class="pi pi-times"></i>
-            <span>Annuler</span>
+            <span>{{ 'COMMON.CANCEL' | translate }}</span>
           </button>
           <button type="button" class="btn-dialog-save" [disabled]="!regionForm.nom || !regionForm.code" (click)="saveRegion()">
             <i class="pi pi-check"></i>
-            <span>{{ editingRegion ? 'Mettre a jour' : 'Creer' }}</span>
+            <span>{{ editingRegion ? ('COMMON.UPDATE' | translate) : ('COMMON.CREATE' | translate) }}</span>
           </button>
         </div>
       </ng-template>
@@ -720,7 +722,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
 
     <!-- ==================== DIALOG ZONE ==================== -->
     <p-dialog
-      [header]="editingZone ? 'Modifier la zone' : 'Nouvelle zone'"
+      [header]="editingZone ? ('ADMIN.EDIT_ZONE' | translate) : ('ADMIN.CREATE_ZONE' | translate)"
       [(visible)]="showZoneDialog"
       [modal]="true"
       [style]="{ width: '480px' }"
@@ -774,7 +776,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
 
     <!-- ==================== DIALOG EGLISE LOCALE ==================== -->
     <p-dialog
-      [header]="editingEgliseLocale ? 'Modifier l\\'eglise locale' : 'Nouvelle eglise locale'"
+      [header]="editingEgliseLocale ? ('ADMIN.EDIT_LOCAL_CHURCH' | translate) : ('ADMIN.CREATE_LOCAL_CHURCH' | translate)"
       [(visible)]="showEgliseLocaleDialog"
       [modal]="true"
       [style]="{ width: '520px' }"
@@ -832,7 +834,7 @@ import { Region, Zone, EgliseLocale, EgliseMaison } from '../../../domain/models
 
     <!-- ==================== DIALOG EGLISE DE MAISON ==================== -->
     <p-dialog
-      [header]="editingEgliseMaison ? 'Modifier l\\'eglise de maison' : 'Nouvelle eglise de maison'"
+      [header]="editingEgliseMaison ? ('ADMIN.EDIT_HOUSE_CHURCH' | translate) : ('ADMIN.CREATE_HOUSE_CHURCH' | translate)"
       [(visible)]="showEgliseMaisonDialog"
       [modal]="true"
       [style]="{ width: '520px' }"

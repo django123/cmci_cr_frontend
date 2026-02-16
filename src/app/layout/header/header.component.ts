@@ -11,6 +11,7 @@ import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { RippleModule } from 'primeng/ripple';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../infrastructure/auth/auth.service';
 import { Utilisateur } from '../../domain/models';
 
@@ -29,7 +30,8 @@ import { Utilisateur } from '../../domain/models';
     OverlayPanelModule,
     RippleModule,
     IconFieldModule,
-    InputIconModule
+    InputIconModule,
+    TranslateModule
   ],
   template: `
     <header class="header">
@@ -41,7 +43,7 @@ import { Utilisateur } from '../../domain/models';
               type="text"
               pInputText
               [(ngModel)]="searchQuery"
-              placeholder="Rechercher transcriptions, réunions..."
+              [placeholder]="'HEADER.SEARCH_PLACEHOLDER' | translate"
               class="search-input" />
           </p-iconfield>
           <div class="search-shortcut">
@@ -58,7 +60,7 @@ import { Utilisateur } from '../../domain/models';
             pRipple
             (click)="onNewTranscription()">
             <i class="pi pi-plus"></i>
-            <span>Nouvelle transcription</span>
+            <span>{{ 'HEADER.NEW_TRANSCRIPTION' | translate }}</span>
           </button>
         </div>
 
@@ -79,6 +81,12 @@ import { Utilisateur } from '../../domain/models';
           <i class="pi" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
         </button>
 
+        <!-- Language Toggle -->
+        <div class="lang-toggle" (click)="toggleLanguage()">
+          <span class="lang-option" [class.active]="currentLang === 'fr'">FR</span>
+          <span class="lang-option" [class.active]="currentLang === 'en'">EN</span>
+        </div>
+
         <!-- Help -->
         <button class="icon-btn" pRipple>
           <i class="pi pi-question-circle"></i>
@@ -98,8 +106,8 @@ import { Utilisateur } from '../../domain/models';
       <!-- Notification Panel -->
       <p-overlayPanel #notificationPanel styleClass="notification-panel">
         <div class="panel-header">
-          <h4>Notifications</h4>
-          <button class="mark-read-btn">Tout marquer comme lu</button>
+          <h4>{{ 'HEADER.NOTIFICATIONS' | translate }}</h4>
+          <button class="mark-read-btn">{{ 'HEADER.MARK_ALL_READ' | translate }}</button>
         </div>
         <div class="notification-list">
           @for (notification of notifications; track notification.id) {
@@ -108,14 +116,14 @@ import { Utilisateur } from '../../domain/models';
                 <i class="pi" [ngClass]="notification.icon"></i>
               </div>
               <div class="notification-content">
-                <p class="notification-title">{{ notification.title }}</p>
-                <p class="notification-time">{{ notification.time }}</p>
+                <p class="notification-title">{{ notification.titleKey | translate }}</p>
+                <p class="notification-time">{{ notification.timeKey | translate }}</p>
               </div>
             </div>
           }
         </div>
         <div class="panel-footer">
-          <a href="/notifications">Voir toutes les notifications</a>
+          <a href="/notifications">{{ 'HEADER.VIEW_ALL_NOTIFICATIONS' | translate }}</a>
         </div>
       </p-overlayPanel>
 
@@ -137,16 +145,16 @@ import { Utilisateur } from '../../domain/models';
         <div class="user-panel-menu">
           <a class="user-panel-item" routerLink="/profile" pRipple (click)="userPanel.hide()">
             <i class="pi pi-user"></i>
-            <span>Mon profil</span>
+            <span>{{ 'HEADER.MY_PROFILE' | translate }}</span>
           </a>
           <a class="user-panel-item" routerLink="/settings" pRipple (click)="userPanel.hide()">
             <i class="pi pi-cog"></i>
-            <span>Paramètres</span>
+            <span>{{ 'HEADER.SETTINGS' | translate }}</span>
           </a>
           <div class="panel-separator"></div>
           <a class="user-panel-item logout" pRipple (click)="onLogout()">
             <i class="pi pi-sign-out"></i>
-            <span>Déconnexion</span>
+            <span>{{ 'HEADER.LOGOUT' | translate }}</span>
           </a>
         </div>
       </p-overlayPanel>
@@ -496,6 +504,32 @@ import { Utilisateur } from '../../domain/models';
       background: #e5e7eb;
       margin: 0.5rem 0;
     }
+
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 2px;
+      cursor: pointer;
+      border: 1px solid #e5e7eb;
+    }
+
+    .lang-option {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      color: #6b7280;
+      transition: all 0.2s;
+      user-select: none;
+
+      &.active {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        box-shadow: 0 1px 3px rgba(99, 102, 241, 0.3);
+      }
+    }
   `]
 })
 export class HeaderComponent implements OnInit {
@@ -503,32 +537,34 @@ export class HeaderComponent implements OnInit {
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   searchQuery = '';
   isDarkMode = false;
   currentUser: Utilisateur | null = null;
+  currentLang = 'fr';
 
   notifications = [
     {
       id: 1,
-      title: 'Transcription terminée avec succès',
-      time: 'Il y a 5 minutes',
+      titleKey: 'HEADER.NOTIF_TRANSCRIPTION_SUCCESS',
+      timeKey: 'HEADER.NOTIF_5MIN_AGO',
       icon: 'pi-check-circle',
       type: 'success',
       read: false
     },
     {
       id: 2,
-      title: 'Nouvelle mise à jour disponible',
-      time: 'Il y a 1 heure',
+      titleKey: 'HEADER.NOTIF_NEW_UPDATE',
+      timeKey: 'HEADER.NOTIF_1H_AGO',
       icon: 'pi-info-circle',
       type: 'info',
       read: false
     },
     {
       id: 3,
-      title: 'Quota mensuel presque atteint',
-      time: 'Il y a 2 heures',
+      titleKey: 'HEADER.NOTIF_QUOTA_WARNING',
+      timeKey: 'HEADER.NOTIF_2H_AGO',
       icon: 'pi-exclamation-triangle',
       type: 'warning',
       read: true
@@ -536,15 +572,16 @@ export class HeaderComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.currentLang = this.translate.currentLang || localStorage.getItem('app-lang') || 'fr';
+
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
     });
 
-    // Charger l'utilisateur si pas déjà chargé
     if (!this.currentUser) {
       this.authService.getCurrentUser().subscribe({
         next: (user) => this.currentUser = user,
-        error: (err) => console.error('Erreur chargement utilisateur:', err)
+        error: (err) => console.error('Error loading user:', err)
       });
     }
   }
@@ -556,6 +593,12 @@ export class HeaderComponent implements OnInit {
   toggleTheme(): void {
     this.isDarkMode = !this.isDarkMode;
     document.body.classList.toggle('dark-mode', this.isDarkMode);
+  }
+
+  toggleLanguage(): void {
+    this.currentLang = this.currentLang === 'fr' ? 'en' : 'fr';
+    this.translate.use(this.currentLang);
+    localStorage.setItem('app-lang', this.currentLang);
   }
 
   onLogout(): void {

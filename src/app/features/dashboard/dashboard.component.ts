@@ -7,6 +7,7 @@ import { RippleModule } from 'primeng/ripple';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, catchError, finalize } from 'rxjs/operators';
@@ -36,7 +37,8 @@ interface StatCard {
     RippleModule,
     SkeletonModule,
     TooltipModule,
-    AvatarModule
+    AvatarModule,
+    TranslateModule
   ],
   template: `
     <div class="dashboard">
@@ -47,18 +49,18 @@ interface StatCard {
             <p-skeleton width="200px" height="2rem" styleClass="mb-2"></p-skeleton>
             <p-skeleton width="300px" height="1rem"></p-skeleton>
           } @else {
-            <h1>Bonjour, {{ userName }} <span class="wave">&#128075;</span></h1>
+            <h1>{{ 'DASHBOARD.HELLO' | translate }} {{ userName }} <span class="wave">&#128075;</span></h1>
             <p>{{ getGreetingMessage() }}</p>
           }
         </div>
         <div class="quick-actions">
           <button class="quick-action-btn primary" pRipple routerLink="/compte-rendu/new">
             <i class="pi pi-plus"></i>
-            <span>Nouveau Compte Rendu</span>
+            <span>{{ 'DASHBOARD.NEW_CR' | translate }}</span>
           </button>
           <button class="quick-action-btn secondary" pRipple routerLink="/compte-rendu">
             <i class="pi pi-list"></i>
-            <span>Mes CR</span>
+            <span>{{ 'DASHBOARD.MY_CRS' | translate }}</span>
           </button>
         </div>
       </section>
@@ -96,11 +98,11 @@ interface StatCard {
                 <i class="pi pi-history"></i>
               </div>
               <div>
-                <h2>Comptes Rendus Récents</h2>
-                <span class="section-subtitle">Vos 5 derniers comptes rendus</span>
+                <h2>{{ 'DASHBOARD.RECENT_CRS' | translate }}</h2>
+                <span class="section-subtitle">{{ 'DASHBOARD.LAST_5_CRS' | translate }}</span>
               </div>
             </div>
-            <a routerLink="/compte-rendu" class="view-all-link">Voir tout <i class="pi pi-arrow-right"></i></a>
+            <a routerLink="/compte-rendu" class="view-all-link">{{ 'DASHBOARD.VIEW_ALL' | translate }} <i class="pi pi-arrow-right"></i></a>
           </div>
           <div class="cr-list">
             @if (isLoading) {
@@ -130,24 +132,24 @@ interface StatCard {
                     <h3>{{ cr.date | date:'EEEE dd MMMM':'':'fr' }}</h3>
                     <div class="cr-meta">
                       <span><i class="pi pi-clock"></i> {{ cr.priereSeule }}</span>
-                      <span><i class="pi pi-book"></i> {{ cr.lectureBiblique || 0 }} chapitres</span>
+                      <span><i class="pi pi-book"></i> {{ cr.lectureBiblique || 0 }} {{ 'COMMON.CHAP' | translate }}</span>
                     </div>
                   </div>
                   <div class="cr-status">
                     @switch (cr.statut) {
                       @case ('VALIDE') {
                         <span class="status-badge valide">
-                          <i class="pi pi-check-circle"></i> Validé
+                          <i class="pi pi-check-circle"></i> {{ 'DASHBOARD.VALIDATED' | translate }}
                         </span>
                       }
                       @case ('SOUMIS') {
                         <span class="status-badge soumis">
-                          <i class="pi pi-send"></i> Soumis
+                          <i class="pi pi-send"></i> {{ 'DASHBOARD.SUBMITTED' | translate }}
                         </span>
                       }
                       @case ('BROUILLON') {
                         <span class="status-badge brouillon">
-                          <i class="pi pi-pencil"></i> Brouillon
+                          <i class="pi pi-pencil"></i> {{ 'DASHBOARD.DRAFT' | translate }}
                         </span>
                       }
                     }
@@ -163,16 +165,16 @@ interface StatCard {
                   </div>
                   <div class="cr-actions">
                     @if (cr.confession) {
-                      <span class="badge-icon" pTooltip="Confession"><i class="pi pi-heart"></i></span>
+                      <span class="badge-icon" [pTooltip]="'DASHBOARD.CONFESSION' | translate"><i class="pi pi-heart"></i></span>
                     }
                     @if (cr.jeune) {
-                      <span class="badge-icon" pTooltip="Jeûne"><i class="pi pi-sun"></i></span>
+                      <span class="badge-icon" [pTooltip]="'DASHBOARD.FASTING' | translate"><i class="pi pi-sun"></i></span>
                     }
                     @if (cr.offrande) {
-                      <span class="badge-icon" pTooltip="Offrande"><i class="pi pi-wallet"></i></span>
+                      <span class="badge-icon" [pTooltip]="'DASHBOARD.OFFERING' | translate"><i class="pi pi-wallet"></i></span>
                     }
                     @if (cr.evangelisation && cr.evangelisation > 0) {
-                      <span class="badge-icon" pTooltip="Évangélisation"><i class="pi pi-users"></i></span>
+                      <span class="badge-icon" [pTooltip]="'DASHBOARD.EVANGELIZATION' | translate"><i class="pi pi-users"></i></span>
                     }
                   </div>
                 </div>
@@ -182,11 +184,11 @@ interface StatCard {
                 <div class="empty-icon-wrapper">
                   <i class="pi pi-file-edit"></i>
                 </div>
-                <h3>Aucun compte rendu</h3>
-                <p>Commencez par créer votre premier compte rendu spirituel</p>
+                <h3>{{ 'DASHBOARD.NO_CR_TITLE' | translate }}</h3>
+                <p>{{ 'DASHBOARD.NO_CR_MESSAGE' | translate }}</p>
                 <button class="btn-empty-cta" pRipple routerLink="/compte-rendu/new">
                   <i class="pi pi-plus"></i>
-                  <span>Créer un CR</span>
+                  <span>{{ 'DASHBOARD.CREATE_CR' | translate }}</span>
                 </button>
               </div>
             }
@@ -202,7 +204,7 @@ interface StatCard {
               <div class="sidebar-card-icon chart-icon-bg">
                 <i class="pi pi-chart-bar"></i>
               </div>
-              <h3>Activité hebdomadaire</h3>
+              <h3>{{ 'DASHBOARD.WEEKLY_ACTIVITY' | translate }}</h3>
             </div>
             @if (isLoading) {
               <p-skeleton width="100%" height="200px"></p-skeleton>
@@ -217,7 +219,7 @@ interface StatCard {
               <div class="sidebar-card-icon progress-icon-bg">
                 <i class="pi pi-chart-line"></i>
               </div>
-              <h3>Progression spirituelle</h3>
+              <h3>{{ 'DASHBOARD.SPIRITUAL_PROGRESS' | translate }}</h3>
             </div>
             @if (isLoading) {
               @for (i of [1,2,3]; track i) {
@@ -229,7 +231,7 @@ interface StatCard {
             } @else {
               <div class="progress-item">
                 <div class="progress-header">
-                  <span>RDQD du mois</span>
+                  <span>{{ 'DASHBOARD.RDQD_MONTH' | translate }}</span>
                   <span class="progress-value">{{ rdqdProgress }}%</span>
                 </div>
                 <div class="custom-progress-bar">
@@ -238,7 +240,7 @@ interface StatCard {
               </div>
               <div class="progress-item">
                 <div class="progress-header">
-                  <span>CR soumis</span>
+                  <span>{{ 'DASHBOARD.CR_SUBMITTED' | translate }}</span>
                   <span class="progress-value">{{ submittedCRCount }}/{{ totalExpectedCR }}</span>
                 </div>
                 <div class="custom-progress-bar">
@@ -247,7 +249,7 @@ interface StatCard {
               </div>
               <div class="progress-item">
                 <div class="progress-header">
-                  <span>CR validés</span>
+                  <span>{{ 'DASHBOARD.CR_VALIDATED' | translate }}</span>
                   <span class="progress-value">{{ validatedCRCount }}</span>
                 </div>
                 <div class="custom-progress-bar">
@@ -262,15 +264,15 @@ interface StatCard {
             <div class="reminder-icon">
               <i class="pi pi-bell"></i>
             </div>
-            <h3>Rappel quotidien</h3>
+            <h3>{{ 'DASHBOARD.DAILY_REMINDER' | translate }}</h3>
             @if (!hasTodayCR) {
-              <p>N'oubliez pas de remplir votre compte rendu du jour !</p>
+              <p>{{ 'DASHBOARD.REMINDER_MESSAGE' | translate }}</p>
               <button class="btn-reminder" pRipple routerLink="/compte-rendu/new">
                 <i class="pi pi-plus"></i>
-                <span>Remplir maintenant</span>
+                <span>{{ 'DASHBOARD.FILL_NOW' | translate }}</span>
               </button>
             } @else {
-              <p class="success-text"><i class="pi pi-check-circle"></i> Vous avez déjà rempli votre CR aujourd'hui. Continuez ainsi !</p>
+              <p class="success-text"><i class="pi pi-check-circle"></i> {{ 'DASHBOARD.ALREADY_FILLED' | translate }}</p>
             }
           </div>
 
@@ -283,12 +285,12 @@ interface StatCard {
                     <i class="pi pi-users"></i>
                   </div>
                   <div>
-                    <h3>Mes Disciples</h3>
-                    <span class="disciples-subtitle">Suivi spirituel</span>
+                    <h3>{{ 'DASHBOARD.MY_DISCIPLES' | translate }}</h3>
+                    <span class="disciples-subtitle">{{ 'DASHBOARD.SPIRITUAL_FOLLOW_UP' | translate }}</span>
                   </div>
                 </div>
                 @if (disciplesWithAlert > 0) {
-                  <span class="alert-badge" pTooltip="Disciples nécessitant attention">
+                  <span class="alert-badge" [pTooltip]="'DASHBOARD.DISCIPLES_NEED_ATTENTION' | translate">
                     {{ disciplesWithAlert }}
                   </span>
                 }
@@ -312,7 +314,7 @@ interface StatCard {
                   <div class="disciples-stats">
                     <div class="stat-mini">
                       <span class="stat-mini-value">{{ disciples.length }}</span>
-                      <span class="stat-mini-label">Total</span>
+                      <span class="stat-mini-label">{{ 'COMMON.TOTAL' | translate }}</span>
                     </div>
                     <div class="stat-mini success">
                       <span class="stat-mini-value">{{ disciplesWithCRToday }}</span>
@@ -1452,6 +1454,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly appRef = inject(ApplicationRef);
   private readonly ngZone = inject(NgZone);
+  private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
 
   // État de chargement global

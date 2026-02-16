@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil, map, startWith } from 'rxjs/operators';
@@ -38,7 +39,8 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
     TooltipModule,
     ConfirmDialogModule,
     ToastModule,
-    SkeletonModule
+    SkeletonModule,
+    TranslateModule
   ],
   providers: [ConfirmationService, MessageService],
   template: `
@@ -46,15 +48,15 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1>Mes Comptes Rendus</h1>
-          <p>Gérez vos comptes rendus spirituels quotidiens</p>
+          <h1>{{ 'CR_LIST.TITLE' | translate }}</h1>
+          <p>{{ 'CR_LIST.SUBTITLE' | translate }}</p>
         </div>
         <button
           type="button"
           class="btn-nouveau-cr"
           (click)="createNew()">
           <i class="pi pi-plus"></i>
-          <span>Nouveau CR</span>
+          <span>{{ 'CR_LIST.NEW_CR' | translate }}</span>
         </button>
       </div>
 
@@ -65,7 +67,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
           <input
             type="text"
             [(ngModel)]="searchTerm"
-            placeholder="Rechercher par RDQD, notes..."
+            [placeholder]="'CR_LIST.SEARCH_PLACEHOLDER' | translate"
             class="search-input" />
           @if (searchTerm) {
             <button type="button" class="clear-btn" (click)="searchTerm = ''">
@@ -78,7 +80,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
           <p-dropdown
             [options]="statutOptions"
             [(ngModel)]="selectedStatut"
-            placeholder="Tous les statuts"
+            [placeholder]="'CR_LIST.ALL_STATUS' | translate"
             [showClear]="true"
             styleClass="filter-select">
             <ng-template pTemplate="selectedItem">
@@ -103,7 +105,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
             [(ngModel)]="dateRange"
             selectionMode="range"
             [readonlyInput]="true"
-            placeholder="Sélectionner une période"
+            [placeholder]="'CR_LIST.SELECT_PERIOD' | translate"
             dateFormat="dd/mm/yy"
             [showIcon]="true"
             [showButtonBar]="true"
@@ -115,7 +117,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
         @if (searchTerm || selectedStatut || (dateRange && dateRange.length)) {
           <button type="button" class="btn-clear-filters" (click)="clearFilters()">
             <i class="pi pi-filter-slash"></i>
-            <span>Effacer</span>
+            <span>{{ 'CR_LIST.CLEAR_FILTERS' | translate }}</span>
           </button>
         }
       </div>
@@ -135,7 +137,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 25, 50]"
             [showCurrentPageReport]="true"
-            currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} comptes rendus"
+            [currentPageReportTemplate]="'CR_LIST.PAGINATION' | translate"
             [globalFilterFields]="['date', 'rdqd', 'statut']"
             styleClass="p-datatable-striped">
 
@@ -144,38 +146,38 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                 <th pSortableColumn="date" style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-calendar"></i>
-                    <span>Date</span>
+                    <span>{{ 'CR_LIST.DATE' | translate }}</span>
                     <p-sortIcon field="date"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 12%">
                   <div class="th-content">
                     <i class="pi pi-check-square"></i>
-                    <span>RDQD</span>
+                    <span>{{ 'CR_LIST.RDQD' | translate }}</span>
                   </div>
                 </th>
                 <th style="width: 12%">
                   <div class="th-content">
                     <i class="pi pi-clock"></i>
-                    <span>Prière</span>
+                    <span>{{ 'CR_LIST.PRAYER' | translate }}</span>
                   </div>
                 </th>
                 <th style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-book"></i>
-                    <span>Lecture</span>
+                    <span>{{ 'CR_LIST.READING' | translate }}</span>
                   </div>
                 </th>
                 <th pSortableColumn="statut" style="width: 12%">
                   <div class="th-content">
                     <i class="pi pi-tag"></i>
-                    <span>Statut</span>
+                    <span>{{ 'CR_LIST.STATUS' | translate }}</span>
                     <p-sortIcon field="statut"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 10%; text-align: right">
                   <div class="th-content" style="justify-content: flex-end">
-                    <span>Actions</span>
+                    <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                   </div>
                 </th>
               </tr>
@@ -210,7 +212,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                     <span class="lecture-icon">
                       <i class="pi pi-book"></i>
                     </span>
-                    <span>{{ cr.lectureBiblique || 0 }} chap.</span>
+                    <span>{{ cr.lectureBiblique || 0 }} {{ 'COMMON.CHAP' | translate }}</span>
                   </div>
                 </td>
                 <td>
@@ -225,7 +227,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                       pButton
                       icon="pi pi-eye"
                       class="p-button-text p-button-rounded"
-                      pTooltip="Voir"
+                      [pTooltip]="'CR_LIST.VIEW_TOOLTIP' | translate"
                       tooltipPosition="top"
                       (click)="viewCR(cr)">
                     </button>
@@ -234,7 +236,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                         pButton
                         icon="pi pi-pencil"
                         class="p-button-text p-button-rounded"
-                        pTooltip="Modifier"
+                        [pTooltip]="'CR_LIST.EDIT_TOOLTIP' | translate"
                         tooltipPosition="top"
                         (click)="editCR(cr)">
                       </button>
@@ -244,7 +246,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                         pButton
                         icon="pi pi-send"
                         class="p-button-text p-button-rounded p-button-success"
-                        pTooltip="Soumettre"
+                        [pTooltip]="'CR_LIST.SUBMIT_TOOLTIP' | translate"
                         tooltipPosition="top"
                         (click)="submitCR(cr)">
                       </button>
@@ -254,7 +256,7 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                         pButton
                         icon="pi pi-trash"
                         class="p-button-text p-button-rounded p-button-danger"
-                        pTooltip="Supprimer"
+                        [pTooltip]="'CR_LIST.DELETE_TOOLTIP' | translate"
                         tooltipPosition="top"
                         (click)="confirmDelete(cr)">
                       </button>
@@ -269,11 +271,11 @@ import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
                 <td colspan="6" class="empty-message">
                   <div class="empty-state">
                     <i class="pi pi-file-edit"></i>
-                    <h3>Aucun compte rendu</h3>
-                    <p>Commencez par créer votre premier compte rendu spirituel</p>
+                    <h3>{{ 'CR_LIST.NO_CR_TITLE' | translate }}</h3>
+                    <p>{{ 'CR_LIST.NO_CR_MESSAGE' | translate }}</p>
                     <button
                       pButton
-                      label="Créer un CR"
+                      [label]="'CR_LIST.CREATE_CR' | translate"
                       icon="pi pi-plus"
                       (click)="createNew()">
                     </button>
@@ -927,6 +929,7 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly appRef = inject(ApplicationRef);
   private readonly ngZone = inject(NgZone);
+  private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
 
   // State - directly bound properties for immediate rendering
@@ -937,13 +940,15 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
   selectedStatut: StatutCR | null = null;
   dateRange: Date[] | null = null;
 
-  statutOptions = [
-    { label: 'Brouillon', value: StatutCR.BROUILLON },
-    { label: 'Soumis', value: StatutCR.SOUMIS },
-    { label: 'Validé', value: StatutCR.VALIDE }
-  ];
+  statutOptions: { label: string; value: StatutCR }[] = [];
 
   ngOnInit(): void {
+    this.statutOptions = [
+      { label: this.translate.instant('CR_LIST.DRAFT'), value: StatutCR.BROUILLON },
+      { label: this.translate.instant('CR_LIST.SUBMITTED'), value: StatutCR.SOUMIS },
+      { label: this.translate.instant('CR_LIST.VALIDATED'), value: StatutCR.VALIDE }
+    ];
+
     // Subscribe to loading state
     this.facade.loading$.pipe(
       takeUntil(this.destroy$)
@@ -1071,22 +1076,22 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
 
   submitCR(cr: CompteRendu): void {
     this.confirmationService.confirm({
-      message: 'Êtes-vous sûr de vouloir soumettre ce compte rendu ? Vous ne pourrez plus le modifier.',
-      header: 'Confirmation de soumission',
+      message: this.translate.instant('CR_LIST.CONFIRM_SUBMIT_MESSAGE'),
+      header: this.translate.instant('CR_LIST.CONFIRM_SUBMIT_HEADER'),
       icon: 'pi pi-send',
       accept: () => {
         this.facade.submit(cr.id).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Succès',
-              detail: 'Compte rendu soumis avec succès'
+              summary: this.translate.instant('COMMON.SUCCESS'),
+              detail: this.translate.instant('CR_LIST.SUBMIT_SUCCESS')
             });
           },
           error: (err) => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Erreur',
+              summary: this.translate.instant('COMMON.ERROR'),
               detail: err.message
             });
           }
@@ -1097,8 +1102,8 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
 
   confirmDelete(cr: CompteRendu): void {
     this.confirmationService.confirm({
-      message: 'Êtes-vous sûr de vouloir supprimer ce compte rendu ?',
-      header: 'Confirmation de suppression',
+      message: this.translate.instant('CR_LIST.CONFIRM_DELETE_MESSAGE'),
+      header: this.translate.instant('CR_LIST.CONFIRM_DELETE_HEADER'),
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
@@ -1106,14 +1111,14 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Succès',
-              detail: 'Compte rendu supprimé'
+              summary: this.translate.instant('COMMON.SUCCESS'),
+              detail: this.translate.instant('CR_LIST.DELETE_SUCCESS')
             });
           },
           error: (err) => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Erreur',
+              summary: this.translate.instant('COMMON.ERROR'),
               detail: err.message
             });
           }

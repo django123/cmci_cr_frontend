@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
 import { SkeletonModule } from 'primeng/skeleton';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { AuthService } from '../../../infrastructure/auth/auth.service';
 import { EgliseMaisonRepository } from '../../../domain/repositories';
@@ -24,14 +25,15 @@ import { Role } from '../../../domain/enums';
     ButtonModule,
     TagModule,
     DividerModule,
-    SkeletonModule
+    SkeletonModule,
+    TranslateModule
   ],
   template: `
     <div class="profile-container">
       <div class="page-header">
         <div class="header-content">
-          <h1>Mon Profil</h1>
-          <p>Consultez vos informations personnelles</p>
+          <h1>{{ 'PROFILE.TITLE' | translate }}</h1>
+          <p>{{ 'PROFILE.SUBTITLE' | translate }}</p>
         </div>
       </div>
 
@@ -73,14 +75,14 @@ import { Role } from '../../../domain/enums';
 
             <!-- Informations détaillées -->
             <div class="profile-details">
-              <h3>Informations personnelles</h3>
+              <h3>{{ 'PROFILE.PERSONAL_INFO' | translate }}</h3>
               <div class="details-grid">
                 <div class="detail-item">
                   <div class="detail-icon">
                     <i class="pi pi-envelope"></i>
                   </div>
                   <div class="detail-content">
-                    <span class="detail-label">Email</span>
+                    <span class="detail-label">{{ 'PROFILE.EMAIL' | translate }}</span>
                     <span class="detail-value">{{ currentUser.email }}</span>
                   </div>
                 </div>
@@ -91,7 +93,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-phone"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Téléphone</span>
+                      <span class="detail-label">{{ 'PROFILE.PHONE' | translate }}</span>
                       <span class="detail-value">{{ currentUser.telephone }}</span>
                     </div>
                   </div>
@@ -103,7 +105,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-calendar"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Date de naissance</span>
+                      <span class="detail-label">{{ 'PROFILE.BIRTH_DATE' | translate }}</span>
                       <span class="detail-value">{{ currentUser.dateNaissance | date:'dd MMMM yyyy' }}</span>
                     </div>
                   </div>
@@ -115,7 +117,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-star"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Date de baptême</span>
+                      <span class="detail-label">{{ 'PROFILE.BAPTISM_DATE' | translate }}</span>
                       <span class="detail-value">{{ currentUser.dateBapteme | date:'dd MMMM yyyy' }}</span>
                     </div>
                   </div>
@@ -127,14 +129,14 @@ import { Role } from '../../../domain/enums';
 
             <!-- Informations église -->
             <div class="profile-details">
-              <h3>Informations d'église</h3>
+              <h3>{{ 'PROFILE.CHURCH_INFO' | translate }}</h3>
               <div class="details-grid">
                 <div class="detail-item">
                   <div class="detail-icon church">
                     <i class="pi pi-building"></i>
                   </div>
                   <div class="detail-content">
-                    <span class="detail-label">Rôle</span>
+                    <span class="detail-label">{{ 'PROFILE.ROLE' | translate }}</span>
                     <span class="detail-value">{{ getRoleLabel(currentUser.role) }}</span>
                   </div>
                 </div>
@@ -145,7 +147,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-home"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Église de Maison</span>
+                      <span class="detail-label">{{ 'PROFILE.HOME_CHURCH' | translate }}</span>
                       <span class="detail-value">{{ egliseMaison.nom }}</span>
                     </div>
                   </div>
@@ -155,7 +157,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-building"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Église Locale</span>
+                      <span class="detail-label">{{ 'PROFILE.LOCAL_CHURCH' | translate }}</span>
                       <span class="detail-value">{{ egliseMaison.egliseLocaleNom }}</span>
                     </div>
                   </div>
@@ -165,7 +167,7 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-home"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Église de Maison</span>
+                      <span class="detail-label">{{ 'PROFILE.HOME_CHURCH' | translate }}</span>
                       <p-skeleton width="150px" height="18px"></p-skeleton>
                     </div>
                   </div>
@@ -175,8 +177,8 @@ import { Role } from '../../../domain/enums';
                       <i class="pi pi-home"></i>
                     </div>
                     <div class="detail-content">
-                      <span class="detail-label">Église de Maison</span>
-                      <span class="detail-value not-assigned">Non assigné</span>
+                      <span class="detail-label">{{ 'PROFILE.HOME_CHURCH' | translate }}</span>
+                      <span class="detail-value not-assigned">{{ 'COMMON.NOT_ASSIGNED' | translate }}</span>
                     </div>
                   </div>
                 }
@@ -189,14 +191,14 @@ import { Role } from '../../../domain/enums';
             <div class="profile-actions">
               <button
                 pButton
-                label="Modifier le profil"
+                [label]="'PROFILE.EDIT_PROFILE' | translate"
                 icon="pi pi-external-link"
                 class="btn-keycloak"
                 (click)="openKeycloakProfile()">
               </button>
               <button
                 pButton
-                label="Se déconnecter"
+                [label]="'PROFILE.LOGOUT' | translate"
                 icon="pi pi-sign-out"
                 class="btn-logout"
                 (click)="onLogout()">
@@ -207,8 +209,8 @@ import { Role } from '../../../domain/enums';
       } @else {
         <div class="no-data">
           <i class="pi pi-user"></i>
-          <h3>Profil non disponible</h3>
-          <p>Impossible de charger vos informations</p>
+          <h3>{{ 'PROFILE.NOT_AVAILABLE_TITLE' | translate }}</h3>
+          <p>{{ 'PROFILE.NOT_AVAILABLE_MESSAGE' | translate }}</p>
         </div>
       }
     </div>
@@ -490,6 +492,7 @@ import { Role } from '../../../domain/enums';
 export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly egliseMaisonRepo = inject(EgliseMaisonRepository);
+  private readonly translate = inject(TranslateService);
 
   currentUser: Utilisateur | null = null;
   egliseMaison: EgliseMaison | null = null;
@@ -540,11 +543,11 @@ export class ProfileComponent implements OnInit {
 
   getRoleLabel(role: Role): string {
     const labels: Record<Role, string> = {
-      [Role.ADMIN]: 'Administrateur',
-      [Role.PASTEUR]: 'Pasteur',
-      [Role.LEADER]: 'Leader',
-      [Role.FD]: 'Famille de Disciples',
-      [Role.FIDELE]: 'Fidèle'
+      [Role.ADMIN]: this.translate.instant('USERS.ROLE_ADMIN'),
+      [Role.PASTEUR]: this.translate.instant('USERS.ROLE_PASTEUR'),
+      [Role.LEADER]: this.translate.instant('USERS.ROLE_LEADER'),
+      [Role.FD]: this.translate.instant('USERS.ROLE_FD'),
+      [Role.FIDELE]: this.translate.instant('USERS.ROLE_FIDELE')
     };
     return labels[role] || role;
   }

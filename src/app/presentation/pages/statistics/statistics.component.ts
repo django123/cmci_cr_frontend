@@ -9,6 +9,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { StatisticsFacade } from '../../../application/use-cases';
 import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../../../domain/models';
@@ -25,7 +26,8 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
     SkeletonModule,
     TooltipModule,
     RippleModule,
-    ToastModule
+    ToastModule,
+    TranslateModule
   ],
   providers: [MessageService],
   template: `
@@ -39,8 +41,8 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               <i class="pi pi-chart-bar"></i>
             </div>
             <div>
-              <h1>Mes Statistiques</h1>
-              <p>Suivez votre progression spirituelle</p>
+              <h1>{{ 'STATISTICS.TITLE' | translate }}</h1>
+              <p>{{ 'STATISTICS.SUBTITLE' | translate }}</p>
             </div>
           </div>
         </div>
@@ -50,7 +52,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               [(ngModel)]="dateRange"
               selectionMode="range"
               [readonlyInput]="true"
-              placeholder="Choisir une p\u00e9riode"
+              [placeholder]="'STATISTICS.CHOOSE_PERIOD' | translate"
               dateFormat="dd/mm/yy"
               [showIcon]="true"
               (onSelect)="onPeriodChange()"
@@ -64,7 +66,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                 [class.active]="activePeriod === 'month'"
                 (click)="loadCurrentMonth()">
                 <i class="pi pi-calendar"></i>
-                Ce mois
+                {{ 'STATISTICS.THIS_MONTH' | translate }}
               </button>
               <button
                 type="button"
@@ -72,7 +74,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                 [class.active]="activePeriod === 'week'"
                 (click)="loadCurrentWeek()">
                 <i class="pi pi-calendar-minus"></i>
-                Cette semaine
+                {{ 'STATISTICS.THIS_WEEK' | translate }}
               </button>
             </div>
           </div>
@@ -81,7 +83,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               class="btn-export btn-pdf"
               (click)="downloadFile('pdf')"
               [disabled]="!currentStats || exporting"
-              pTooltip="T\u00e9l\u00e9charger en PDF"
+              [pTooltip]="'STATISTICS.DOWNLOAD_PDF' | translate"
               tooltipPosition="bottom"
               pRipple>
               @if (exporting && exportFormat === 'pdf') {
@@ -95,7 +97,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               class="btn-export btn-excel"
               (click)="downloadFile('excel')"
               [disabled]="!currentStats || exporting"
-              pTooltip="T\u00e9l\u00e9charger en Excel"
+              [pTooltip]="'STATISTICS.DOWNLOAD_EXCEL' | translate"
               tooltipPosition="bottom"
               pRipple>
               @if (exporting && exportFormat === 'excel') {
@@ -139,11 +141,11 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             </div>
             <div class="stat-info">
               <span class="stat-value">{{ currentStats.totalCRSoumis }}</span>
-              <span class="stat-label">CR Soumis</span>
+              <span class="stat-label">{{ 'STATISTICS.CR_SUBMITTED' | translate }}</span>
             </div>
             @if (currentStats.totalCRValides > 0) {
               <div class="stat-badge success">
-                <i class="pi pi-check"></i> {{ currentStats.totalCRValides }} valid\u00e9s
+                <i class="pi pi-check"></i> {{ currentStats.totalCRValides }} {{ 'STATISTICS.CR_VALIDATED_COUNT' | translate }}
               </div>
             }
           </div>
@@ -154,7 +156,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             </div>
             <div class="stat-info">
               <span class="stat-value">{{ currentStats.tauxCompletion | number:'1.0-1' }}%</span>
-              <span class="stat-label">Taux de compl\u00e9tion</span>
+              <span class="stat-label">{{ 'STATISTICS.COMPLETION_RATE' | translate }}</span>
             </div>
             <div class="stat-progress">
               <div class="progress-bar">
@@ -170,10 +172,10 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             </div>
             <div class="stat-info">
               <span class="stat-value">{{ currentStats.moyenneRDQD | number:'1.0-1' }}%</span>
-              <span class="stat-label">Moyenne RDQD</span>
+              <span class="stat-label">{{ 'STATISTICS.RDQD_AVERAGE' | translate }}</span>
             </div>
             <div class="stat-sub">
-              {{ currentStats.totalRDQDAccomplis }}/{{ currentStats.totalRDQDAttendus }} accomplis
+              {{ currentStats.totalRDQDAccomplis }}/{{ currentStats.totalRDQDAttendus }} {{ 'STATISTICS.RDQD_COMPLETED' | translate }}
             </div>
           </div>
 
@@ -183,10 +185,10 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             </div>
             <div class="stat-info">
               <span class="stat-value">{{ currentStats.totalEvangelisations }}</span>
-              <span class="stat-label">\u00c9vang\u00e9lisations</span>
+              <span class="stat-label">{{ 'STATISTICS.EVANGELIZATIONS' | translate }}</span>
             </div>
             <div class="stat-sub">
-              {{ currentStats.totalContactsUtiles }} contacts utiles
+              {{ currentStats.totalContactsUtiles }} {{ 'STATISTICS.USEFUL_CONTACTS' | translate }}
             </div>
           </div>
         </div>
@@ -198,19 +200,19 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             <div class="section-header">
               <div class="section-title">
                 <i class="pi pi-heart"></i>
-                <span>Temps de pri\u00e8re</span>
+                <span>{{ 'STATISTICS.PRAYER_TIME' | translate }}</span>
               </div>
             </div>
             <div class="section-body">
               <div class="prayer-total-card">
                 <span class="prayer-total-value">{{ getTotalPrayerDisplay() }}</span>
-                <span class="prayer-total-label">Temps total de pri\u00e8re</span>
+                <span class="prayer-total-label">{{ 'STATISTICS.TOTAL_PRAYER_TIME' | translate }}</span>
               </div>
               <div class="prayer-breakdown">
                 <div class="prayer-row">
                   <div class="prayer-row-header">
                     <span class="prayer-dot solo"></span>
-                    <span class="prayer-name">Pri\u00e8re seul(e)</span>
+                    <span class="prayer-name">{{ 'STATISTICS.SOLO_PRAYER' | translate }}</span>
                     <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereSeuleMinutes) }}</span>
                   </div>
                   <div class="prayer-bar-track">
@@ -220,7 +222,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                 <div class="prayer-row">
                   <div class="prayer-row-header">
                     <span class="prayer-dot couple"></span>
-                    <span class="prayer-name">Pri\u00e8re en couple</span>
+                    <span class="prayer-name">{{ 'STATISTICS.COUPLE_PRAYER' | translate }}</span>
                     <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereCoupleMinutes) }}</span>
                   </div>
                   <div class="prayer-bar-track">
@@ -230,7 +232,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                 <div class="prayer-row">
                   <div class="prayer-row-header">
                     <span class="prayer-dot family"></span>
-                    <span class="prayer-name">Avec enfants</span>
+                    <span class="prayer-name">{{ 'STATISTICS.FAMILY_PRAYER' | translate }}</span>
                     <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereAvecEnfantsMinutes) }}</span>
                   </div>
                   <div class="prayer-bar-track">
@@ -246,7 +248,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
             <div class="section-header">
               <div class="section-title">
                 <i class="pi pi-book"></i>
-                <span>\u00c9tude & Activit\u00e9s</span>
+                <span>{{ 'STATISTICS.STUDY_ACTIVITIES' | translate }}</span>
               </div>
             </div>
             <div class="section-body">
@@ -256,28 +258,28 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                     <i class="pi pi-book"></i>
                   </div>
                   <span class="activity-value">{{ formatMinutes(currentStats.totalTempsEtudeParoleMinutes) }}</span>
-                  <span class="activity-label">Temps d'\u00e9tude</span>
+                  <span class="activity-label">{{ 'STATISTICS.STUDY_TIME' | translate }}</span>
                 </div>
                 <div class="activity-card">
                   <div class="activity-icon contacts">
                     <i class="pi pi-phone"></i>
                   </div>
                   <span class="activity-value">{{ currentStats.totalContactsUtiles }}</span>
-                  <span class="activity-label">Contacts utiles</span>
+                  <span class="activity-label">{{ 'STATISTICS.USEFUL_CONTACTS_LABEL' | translate }}</span>
                 </div>
                 <div class="activity-card">
                   <div class="activity-icon invitations">
                     <i class="pi pi-building"></i>
                   </div>
                   <span class="activity-value">{{ currentStats.totalInvitationsCulte }}</span>
-                  <span class="activity-label">Invitations culte</span>
+                  <span class="activity-label">{{ 'STATISTICS.WORSHIP_INVITATIONS' | translate }}</span>
                 </div>
                 <div class="activity-card">
                   <div class="activity-icon evangelism">
                     <i class="pi pi-megaphone"></i>
                   </div>
                   <span class="activity-value">{{ currentStats.totalEvangelisations }}</span>
-                  <span class="activity-label">\u00c9vang\u00e9lisations</span>
+                  <span class="activity-label">{{ 'STATISTICS.EVANGELIZATIONS_LABEL' | translate }}</span>
                 </div>
               </div>
             </div>
@@ -289,7 +291,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
           <div class="section-header">
             <div class="section-title">
               <i class="pi pi-wallet"></i>
-              <span>Offrandes</span>
+              <span>{{ 'STATISTICS.OFFERINGS' | translate }}</span>
             </div>
           </div>
           <div class="section-body">
@@ -298,7 +300,7 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
                 <span class="currency">XAF</span>
                 <span class="amount">{{ (currentStats.totalOffrandes) | number:'1.0-0' }}</span>
               </div>
-              <p class="offerings-label">Total des offrandes sur la p\u00e9riode</p>
+              <p class="offerings-label">{{ 'STATISTICS.TOTAL_OFFERINGS' | translate }}</p>
             </div>
           </div>
         </div>
@@ -309,11 +311,11 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
           <div class="empty-icon">
             <i class="pi pi-chart-bar"></i>
           </div>
-          <h3>Aucune donn\u00e9e disponible</h3>
-          <p>S\u00e9lectionnez une p\u00e9riode pour voir vos statistiques</p>
+          <h3>{{ 'STATISTICS.NO_DATA_TITLE' | translate }}</h3>
+          <p>{{ 'STATISTICS.NO_DATA_MESSAGE' | translate }}</p>
           <button class="btn-action" (click)="loadCurrentMonth()" pRipple>
             <i class="pi pi-calendar"></i>
-            Charger le mois courant
+            {{ 'STATISTICS.LOAD_CURRENT_MONTH' | translate }}
           </button>
         </div>
       }
@@ -996,6 +998,7 @@ export class StatisticsComponent implements OnInit {
   private readonly facade = inject(StatisticsFacade);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly messageService = inject(MessageService);
+  private readonly translate = inject(TranslateService);
 
   statistics$ = this.facade.statistics$;
   loading$ = this.facade.loading$;
@@ -1067,8 +1070,8 @@ export class StatisticsComponent implements OnInit {
         this.exporting = false;
         this.messageService.add({
           severity: 'success',
-          summary: 'Export r\u00e9ussi',
-          detail: `Fichier ${extension.toUpperCase()} t\u00e9l\u00e9charg\u00e9 avec succ\u00e8s`,
+          summary: this.translate.instant('STATISTICS.EXPORT_SUCCESS'),
+          detail: this.translate.instant('STATISTICS.EXPORT_SUCCESS_DETAIL', {ext: extension.toUpperCase()}),
           life: 3000
         });
       },
@@ -1076,8 +1079,8 @@ export class StatisticsComponent implements OnInit {
         this.exporting = false;
         this.messageService.add({
           severity: 'error',
-          summary: 'Erreur',
-          detail: 'Impossible de g\u00e9n\u00e9rer le fichier. Veuillez r\u00e9essayer.',
+          summary: this.translate.instant('COMMON.ERROR'),
+          detail: this.translate.instant('STATISTICS.EXPORT_ERROR'),
           life: 5000
         });
       }

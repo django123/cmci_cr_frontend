@@ -14,6 +14,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TabViewModule } from 'primeng/tabview';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -39,7 +40,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
     AvatarModule,
     SkeletonModule,
     TabViewModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    TranslateModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -50,8 +52,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
       <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1>Gestion des Disciples</h1>
-          <p>Gerez l'assignation des disciples aux Faiseurs de Disciples</p>
+          <h1>{{ 'DISCIPLES.TITLE' | translate }}</h1>
+          <p>{{ 'DISCIPLES.SUBTITLE' | translate }}</p>
         </div>
         <div class="header-actions">
           <button
@@ -59,7 +61,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
             class="btn-refresh"
             (click)="refreshData()">
             <i class="pi pi-refresh"></i>
-            <span>Actualiser</span>
+            <span>{{ 'COMMON.REFRESH' | translate }}</span>
           </button>
         </div>
       </div>
@@ -72,7 +74,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ myDisciples.length }}</span>
-            <span class="stat-label">Mes disciples</span>
+            <span class="stat-label">{{ 'DISCIPLES.MY_DISCIPLES' | translate }}</span>
           </div>
         </div>
 
@@ -82,7 +84,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
           <div class="stat-info">
             <span class="stat-value">{{ unassignedDisciples.length }}</span>
-            <span class="stat-label">Sans FD</span>
+            <span class="stat-label">{{ 'DISCIPLES.UNASSIGNED' | translate }}</span>
           </div>
         </div>
       </div>
@@ -90,7 +92,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
       <!-- Tabs -->
       <p-tabView>
         <!-- My Disciples Tab -->
-        <p-tabPanel header="Mes disciples">
+        <p-tabPanel [header]="'DISCIPLES.MY_DISCIPLES' | translate">
           <!-- Filters -->
           <div class="filters-bar">
             <div class="search-box">
@@ -98,7 +100,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
               <input
                 type="text"
                 [(ngModel)]="myDisciplesSearch"
-                placeholder="Rechercher un disciple..."
+                [placeholder]="'DISCIPLES.SEARCH_DISCIPLE' | translate"
                 class="search-input" />
               @if (myDisciplesSearch) {
                 <button type="button" class="clear-btn" (click)="myDisciplesSearch = ''">
@@ -130,38 +132,38 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     <th pSortableColumn="nomComplet" style="width: 25%">
                       <div class="th-content">
                         <i class="pi pi-user"></i>
-                        <span>Disciple</span>
+                        <span>{{ 'DISCIPLES.DISCIPLE' | translate }}</span>
                         <p-sortIcon field="nomComplet"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-envelope"></i>
-                        <span>Email</span>
+                        <span>{{ 'DISCIPLES.EMAIL' | translate }}</span>
                       </div>
                     </th>
                     <th style="width: 15%">
                       <div class="th-content">
                         <i class="pi pi-phone"></i>
-                        <span>Telephone</span>
+                        <span>{{ 'DISCIPLES.PHONE' | translate }}</span>
                       </div>
                     </th>
                     <th pSortableColumn="dateBapteme" style="width: 15%">
                       <div class="th-content">
                         <i class="pi pi-calendar"></i>
-                        <span>Bapteme</span>
+                        <span>{{ 'DISCIPLES.BAPTISM' | translate }}</span>
                         <p-sortIcon field="dateBapteme"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 15%">
                       <div class="th-content">
                         <i class="pi pi-tag"></i>
-                        <span>Statut</span>
+                        <span>{{ 'DISCIPLES.STATUS' | translate }}</span>
                       </div>
                     </th>
                     <th style="width: 10%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -195,7 +197,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                           pButton
                           icon="pi pi-user-minus"
                           class="p-button-text p-button-rounded p-button-danger"
-                          pTooltip="Retirer du groupe"
+                          [pTooltip]="'DISCIPLES.REMOVE_TOOLTIP' | translate"
                           tooltipPosition="top"
                           (click)="confirmRemoveFromFD(disciple)">
                         </button>
@@ -209,8 +211,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     <td colspan="6" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-users"></i>
-                        <h3>Aucun disciple assigne</h3>
-                        <p>Assignez des fideles depuis l'onglet "Sans FD"</p>
+                        <h3>{{ 'DISCIPLES.NO_DISCIPLES_TITLE' | translate }}</h3>
+                        <p>{{ 'DISCIPLES.NO_DISCIPLES_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -221,14 +223,14 @@ import { Role, RoleLabels } from '../../../domain/enums';
         </p-tabPanel>
 
         <!-- Unassigned Disciples Tab -->
-        <p-tabPanel header="Sans FD">
+        <p-tabPanel [header]="'DISCIPLES.UNASSIGNED' | translate">
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search search-icon"></i>
               <input
                 type="text"
                 [(ngModel)]="unassignedSearch"
-                placeholder="Rechercher un fidele sans FD..."
+                [placeholder]="'DISCIPLES.SEARCH_UNASSIGNED' | translate"
                 class="search-input" />
               @if (unassignedSearch) {
                 <button type="button" class="clear-btn" (click)="unassignedSearch = ''">
@@ -260,32 +262,32 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     <th pSortableColumn="nomComplet" style="width: 25%">
                       <div class="th-content">
                         <i class="pi pi-user"></i>
-                        <span>Fidele</span>
+                        <span>{{ 'DISCIPLES.FAITHFUL' | translate }}</span>
                         <p-sortIcon field="nomComplet"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 25%">
                       <div class="th-content">
                         <i class="pi pi-envelope"></i>
-                        <span>Email</span>
+                        <span>{{ 'DISCIPLES.EMAIL' | translate }}</span>
                       </div>
                     </th>
                     <th style="width: 15%">
                       <div class="th-content">
                         <i class="pi pi-phone"></i>
-                        <span>Telephone</span>
+                        <span>{{ 'DISCIPLES.PHONE' | translate }}</span>
                       </div>
                     </th>
                     <th pSortableColumn="createdAt" style="width: 20%">
                       <div class="th-content">
                         <i class="pi pi-calendar"></i>
-                        <span>Inscription</span>
+                        <span>{{ 'DISCIPLES.REGISTRATION' | translate }}</span>
                         <p-sortIcon field="createdAt"></p-sortIcon>
                       </div>
                     </th>
                     <th style="width: 15%; text-align: right">
                       <div class="th-content" style="justify-content: flex-end">
-                        <span>Actions</span>
+                        <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                       </div>
                     </th>
                   </tr>
@@ -313,7 +315,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                           pButton
                           icon="pi pi-user-plus"
                           class="p-button-text p-button-rounded p-button-success"
-                          pTooltip="M'assigner ce disciple"
+                          [pTooltip]="'DISCIPLES.ASSIGN_TO_ME' | translate"
                           tooltipPosition="top"
                           (click)="assignToMe(disciple)">
                         </button>
@@ -321,7 +323,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                           pButton
                           icon="pi pi-share-alt"
                           class="p-button-text p-button-rounded"
-                          pTooltip="Assigner a un FD"
+                          [pTooltip]="'DISCIPLES.ASSIGN_TO_FD' | translate"
                           tooltipPosition="top"
                           (click)="openAssignDialog(disciple)">
                         </button>
@@ -335,8 +337,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     <td colspan="5" class="empty-message">
                       <div class="empty-state">
                         <i class="pi pi-check-circle"></i>
-                        <h3>Tous les fideles sont assignes</h3>
-                        <p>Aucun fidele en attente d'un FD</p>
+                        <h3>{{ 'DISCIPLES.ALL_ASSIGNED_TITLE' | translate }}</h3>
+                        <p>{{ 'DISCIPLES.ALL_ASSIGNED_MESSAGE' | translate }}</p>
                       </div>
                     </td>
                   </tr>
@@ -349,7 +351,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
 
       <!-- Assign FD Dialog -->
       <p-dialog
-        header="Assigner a un Faiseur de Disciples"
+        [header]="'DISCIPLES.ASSIGN_DIALOG_TITLE' | translate"
         [(visible)]="showAssignDialog"
         [modal]="true"
         [style]="{ width: '480px' }"
@@ -370,13 +372,13 @@ import { Role, RoleLabels } from '../../../domain/enums';
           </div>
 
           <div class="form-field">
-            <label>Selectionner un FD <span class="required">*</span></label>
+            <label>{{ 'DISCIPLES.SELECT_FD' | translate }} <span class="required">*</span></label>
             <p-dropdown
               [options]="fdList"
               [(ngModel)]="selectedFD"
               optionLabel="nomComplet"
               optionValue="id"
-              placeholder="Selectionner un FD"
+              [placeholder]="'DISCIPLES.SELECT_FD' | translate"
               [filter]="true"
               filterBy="nomComplet"
               appendTo="body"
@@ -398,11 +400,11 @@ import { Role, RoleLabels } from '../../../domain/enums';
           <div class="dialog-footer">
             <button type="button" class="btn-dialog-cancel" (click)="showAssignDialog = false">
               <i class="pi pi-times"></i>
-              <span>Annuler</span>
+              <span>{{ 'COMMON.CANCEL' | translate }}</span>
             </button>
             <button type="button" class="btn-dialog-save" [disabled]="!selectedFD" (click)="confirmAssign()">
               <i class="pi pi-check"></i>
-              <span>Assigner</span>
+              <span>{{ 'DISCIPLES.ASSIGN' | translate }}</span>
             </button>
           </div>
         </ng-template>
@@ -908,6 +910,7 @@ export class DisciplesComponent implements OnInit, OnDestroy {
   private readonly userAdminFacade = inject(UserAdminFacade);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
 
   // State
@@ -977,14 +980,14 @@ export class DisciplesComponent implements OnInit, OnDestroy {
 
   assignToMe(disciple: Disciple): void {
     this.confirmationService.confirm({
-      message: `Voulez-vous vous assigner ${disciple.nomComplet} comme disciple ?`,
-      header: 'Confirmation',
+      message: this.translate.instant('DISCIPLES.CONFIRM_ASSIGN_TO_ME', {name: disciple.nomComplet}),
+      header: this.translate.instant('COMMON.CONFIRMATION'),
       icon: 'pi pi-user-plus',
       accept: () => {
         this.messageService.add({
           severity: 'info',
-          summary: 'Information',
-          detail: 'Utilisez le bouton "Assigner a un FD" pour selectionner le FD'
+          summary: this.translate.instant('COMMON.INFO'),
+          detail: this.translate.instant('DISCIPLES.ASSIGN_SUCCESS', {name: disciple.nomComplet})
         });
       }
     });
@@ -1003,34 +1006,34 @@ export class DisciplesComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Succes',
-          detail: `${this.selectedDisciple?.nomComplet} a ete assigne avec succes`
+          summary: this.translate.instant('COMMON.SUCCESS'),
+          detail: this.translate.instant('DISCIPLES.ASSIGN_SUCCESS', {name: this.selectedDisciple?.nomComplet})
         });
         this.showAssignDialog = false;
         this.refreshData();
       },
       error: (err) => {
-        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err.message });
+        this.messageService.add({ severity: 'error', summary: this.translate.instant('COMMON.ERROR'), detail: err.message });
       }
     });
   }
 
   confirmRemoveFromFD(disciple: Disciple): void {
     this.confirmationService.confirm({
-      message: `Voulez-vous vraiment retirer ${disciple.nomComplet} de votre groupe de disciples ?`,
-      header: 'Confirmation',
+      message: this.translate.instant('DISCIPLES.CONFIRM_REMOVE', {name: disciple.nomComplet}),
+      header: this.translate.instant('COMMON.CONFIRMATION'),
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Retirer',
-      rejectLabel: 'Annuler',
+      acceptLabel: this.translate.instant('DISCIPLES.REMOVE_BTN'),
+      rejectLabel: this.translate.instant('COMMON.CANCEL'),
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.disciplesFacade.removeFromFD(disciple.id).subscribe({
           next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Succes', detail: `${disciple.nomComplet} a ete retire du groupe` });
+            this.messageService.add({ severity: 'success', summary: this.translate.instant('COMMON.SUCCESS'), detail: this.translate.instant('DISCIPLES.REMOVE_SUCCESS', {name: disciple.nomComplet}) });
             this.refreshData();
           },
           error: (err) => {
-            this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err.message });
+            this.messageService.add({ severity: 'error', summary: this.translate.instant('COMMON.ERROR'), detail: err.message });
           }
         });
       }

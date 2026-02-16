@@ -10,6 +10,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { RippleModule } from 'primeng/ripple';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -30,7 +31,8 @@ import { StatutCR } from '../../../domain/enums';
     ConfirmDialogModule,
     AvatarModule,
     SkeletonModule,
-    RippleModule
+    RippleModule,
+    TranslateModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -42,8 +44,8 @@ import { StatutCR } from '../../../domain/enums';
             <i class="pi pi-check-square"></i>
           </div>
           <div class="header-content">
-            <h1>Validation des Comptes Rendus</h1>
-            <p>Validez les comptes rendus soumis par vos disciples</p>
+            <h1>{{ 'VALIDATION.TITLE' | translate }}</h1>
+            <p>{{ 'VALIDATION.SUBTITLE' | translate }}</p>
           </div>
         </div>
         <div class="header-stats">
@@ -53,7 +55,7 @@ import { StatutCR } from '../../../domain/enums';
             </div>
             <div class="stat-badge-content">
               <span class="stat-count">{{ pendingCount }}</span>
-              <span class="stat-label">En attente</span>
+              <span class="stat-label">{{ 'VALIDATION.PENDING' | translate }}</span>
             </div>
           </div>
           <div class="stat-badge validated">
@@ -62,7 +64,7 @@ import { StatutCR } from '../../../domain/enums';
             </div>
             <div class="stat-badge-content">
               <span class="stat-count validated-count">{{ validatedCount }}</span>
-              <span class="stat-label">Validés</span>
+              <span class="stat-label">{{ 'VALIDATION.VALIDATED' | translate }}</span>
             </div>
           </div>
         </div>
@@ -83,7 +85,7 @@ import { StatutCR } from '../../../domain/enums';
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 25, 50]"
             [showCurrentPageReport]="true"
-            currentPageReportTemplate="Affichage {first} à {last} sur {totalRecords} comptes rendus"
+            [currentPageReportTemplate]="'VALIDATION.PAGINATION' | translate"
             styleClass="p-datatable-striped">
 
             <ng-template pTemplate="header">
@@ -91,44 +93,44 @@ import { StatutCR } from '../../../domain/enums';
                 <th style="width: 18%">
                   <div class="th-content">
                     <i class="pi pi-user"></i>
-                    <span>Fidèle</span>
+                    <span>{{ 'VALIDATION.FAITHFUL' | translate }}</span>
                   </div>
                 </th>
                 <th pSortableColumn="date" style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-calendar"></i>
-                    <span>Date</span>
+                    <span>{{ 'VALIDATION.DATE' | translate }}</span>
                     <p-sortIcon field="date"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 12%">
                   <div class="th-content">
                     <i class="pi pi-check-square"></i>
-                    <span>RDQD</span>
+                    <span>{{ 'VALIDATION.RDQD' | translate }}</span>
                   </div>
                 </th>
                 <th style="width: 12%">
                   <div class="th-content">
                     <i class="pi pi-clock"></i>
-                    <span>Prière</span>
+                    <span>{{ 'VALIDATION.PRAYER' | translate }}</span>
                   </div>
                 </th>
                 <th style="width: 15%">
                   <div class="th-content">
                     <i class="pi pi-book"></i>
-                    <span>Lecture</span>
+                    <span>{{ 'VALIDATION.READING' | translate }}</span>
                   </div>
                 </th>
                 <th pSortableColumn="updatedAt" style="width: 14%">
                   <div class="th-content">
                     <i class="pi pi-send"></i>
-                    <span>Soumis le</span>
+                    <span>{{ 'VALIDATION.SUBMITTED_ON' | translate }}</span>
                     <p-sortIcon field="updatedAt"></p-sortIcon>
                   </div>
                 </th>
                 <th style="width: 14%; text-align: right">
                   <div class="th-content" style="justify-content: flex-end">
-                    <span>Actions</span>
+                    <span>{{ 'COMMON.ACTIONS' | translate }}</span>
                   </div>
                 </th>
               </tr>
@@ -142,9 +144,9 @@ import { StatutCR } from '../../../domain/enums';
                       <i class="pi pi-user"></i>
                     </div>
                     <div class="user-info">
-                      <span class="user-name">Utilisateur</span>
+                      <span class="user-name">{{ 'VALIDATION.USER_LABEL' | translate }}</span>
                       @if (!cr.vuParFd) {
-                        <span class="new-badge">Nouveau</span>
+                        <span class="new-badge">{{ 'VALIDATION.NEW_BADGE' | translate }}</span>
                       }
                     </div>
                   </div>
@@ -177,7 +179,7 @@ import { StatutCR } from '../../../domain/enums';
                     <span class="lecture-icon">
                       <i class="pi pi-book"></i>
                     </span>
-                    <span>{{ cr.lectureBiblique || 0 }} chap.</span>
+                    <span>{{ cr.lectureBiblique || 0 }} {{ 'COMMON.CHAP' | translate }}</span>
                   </div>
                 </td>
                 <td>
@@ -190,7 +192,7 @@ import { StatutCR } from '../../../domain/enums';
                   <div class="actions-cell">
                     <button
                       class="action-btn view"
-                      pTooltip="Voir détails"
+                      [pTooltip]="'VALIDATION.VIEW_DETAILS' | translate"
                       tooltipPosition="top"
                       pRipple
                       (click)="viewCR(cr)">
@@ -198,7 +200,7 @@ import { StatutCR } from '../../../domain/enums';
                     </button>
                     <button
                       class="action-btn validate"
-                      pTooltip="Valider"
+                      [pTooltip]="'VALIDATION.VALIDATE_TOOLTIP' | translate"
                       tooltipPosition="top"
                       pRipple
                       (click)="validateCR(cr)">
@@ -207,7 +209,7 @@ import { StatutCR } from '../../../domain/enums';
                     @if (!cr.vuParFd) {
                       <button
                         class="action-btn mark-seen"
-                        pTooltip="Marquer comme vu"
+                        [pTooltip]="'VALIDATION.MARK_AS_SEEN' | translate"
                         tooltipPosition="top"
                         pRipple
                         (click)="markAsViewed(cr)">
@@ -226,8 +228,8 @@ import { StatutCR } from '../../../domain/enums';
                     <div class="empty-icon-wrapper">
                       <i class="pi pi-check-circle"></i>
                     </div>
-                    <h3>Aucun compte rendu en attente</h3>
-                    <p>Tous les comptes rendus ont été validés</p>
+                    <h3>{{ 'VALIDATION.NO_PENDING_TITLE' | translate }}</h3>
+                    <p>{{ 'VALIDATION.NO_PENDING_MESSAGE' | translate }}</p>
                   </div>
                 </td>
               </tr>
@@ -764,6 +766,7 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly appRef = inject(ApplicationRef);
   private readonly ngZone = inject(NgZone);
+  private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
 
   // State - directly bound properties for immediate rendering
@@ -837,22 +840,22 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
 
   validateCR(cr: CompteRendu): void {
     this.confirmationService.confirm({
-      message: 'Voulez-vous valider ce compte rendu ?',
-      header: 'Confirmation',
+      message: this.translate.instant('VALIDATION.CONFIRM_VALIDATE'),
+      header: this.translate.instant('COMMON.CONFIRMATION'),
       icon: 'pi pi-check',
       accept: () => {
         this.facade.validate(cr.id).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Succès',
-              detail: 'Compte rendu validé'
+              summary: this.translate.instant('COMMON.SUCCESS'),
+              detail: this.translate.instant('VALIDATION.SUCCESS_VALIDATE')
             });
           },
           error: (err) => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Erreur',
+              summary: this.translate.instant('COMMON.ERROR'),
               detail: err.message
             });
           }
@@ -866,8 +869,8 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'info',
-          summary: 'Info',
-          detail: 'Marqué comme vu'
+          summary: this.translate.instant('COMMON.INFO'),
+          detail: this.translate.instant('VALIDATION.MARKED_AS_SEEN')
         });
       }
     });

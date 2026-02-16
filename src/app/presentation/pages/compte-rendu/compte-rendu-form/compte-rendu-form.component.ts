@@ -13,6 +13,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { CompteRenduFacade } from '../../../../application/use-cases';
 import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../domain/repositories';
@@ -32,7 +33,8 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
     CheckboxModule,
     DropdownModule,
     DividerModule,
-    ToastModule
+    ToastModule,
+    TranslateModule
   ],
   providers: [MessageService],
   template: `
@@ -47,15 +49,15 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
             (click)="goBack()">
           </button>
           <div class="header-title">
-            <h1>{{ isEditMode ? 'Modifier le' : 'Nouveau' }} Compte Rendu</h1>
-            <p>Remplissez votre compte rendu spirituel quotidien</p>
+            <h1>{{ isEditMode ? ('CR_FORM.TITLE_EDIT' | translate) : ('CR_FORM.TITLE_NEW' | translate) }}</h1>
+            <p>{{ 'CR_FORM.SUBTITLE' | translate }}</p>
           </div>
         </div>
         <div class="header-actions">
           <button
             pButton
             type="button"
-            label="Annuler"
+            [label]="'COMMON.CANCEL' | translate"
             icon="pi pi-times"
             class="btn-cancel"
             (click)="goBack()">
@@ -63,7 +65,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <button
             pButton
             type="submit"
-            [label]="isEditMode ? 'Mettre à jour' : 'Enregistrer'"
+            [label]="isEditMode ? ('CR_FORM.UPDATE' | translate) : ('CR_FORM.SAVE' | translate)"
             icon="pi pi-save"
             class="btn-save"
             [loading]="loading"
@@ -81,11 +83,11 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <div class="form-card">
             <div class="card-header">
               <i class="pi pi-calendar"></i>
-              <span>Informations générales</span>
+              <span>{{ 'CR_FORM.GENERAL_INFO' | translate }}</span>
             </div>
             <div class="card-body">
               <div class="field">
-                <label for="date">Date <span class="required">*</span></label>
+                <label for="date">{{ 'CR_FORM.DATE' | translate }} <span class="required">*</span></label>
                 <p-calendar
                   id="date"
                   formControlName="date"
@@ -94,15 +96,15 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                   [maxDate]="today"
                   appendTo="body"
                   styleClass="w-full"
-                  placeholder="Sélectionnez une date">
+                  [placeholder]="'CR_FORM.SELECT_DATE' | translate">
                 </p-calendar>
                 @if (form.get('date')?.invalid && form.get('date')?.touched) {
-                  <small class="error-text">La date est requise</small>
+                  <small class="error-text">{{ 'CR_FORM.DATE_REQUIRED' | translate }}</small>
                 }
               </div>
 
               <div class="field">
-                <label>RDQD (Rendez-vous Quotidien avec Dieu) <span class="required">*</span></label>
+                <label>{{ 'CR_FORM.RDQD_LABEL' | translate }} <span class="required">*</span></label>
                 <div class="rdqd-wrapper">
                   <div class="rdqd-input-box">
                     <button type="button" class="rdqd-btn decrement" (click)="decrementRdqdAccompli()" [disabled]="form.get('rdqdAccompli')?.value <= 0">
@@ -110,7 +112,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                     </button>
                     <div class="rdqd-value">
                       <span class="rdqd-number-display">{{ form.get('rdqdAccompli')?.value }}</span>
-                      <span class="rdqd-label">Accompli</span>
+                      <span class="rdqd-label">{{ 'CR_FORM.RDQD_ACCOMPLISHED' | translate }}</span>
                     </div>
                     <button type="button" class="rdqd-btn increment" (click)="incrementRdqdAccompli()" [disabled]="form.get('rdqdAccompli')?.value >= form.get('rdqdAttendu')?.value">
                       <i class="pi pi-plus"></i>
@@ -127,14 +129,14 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                     </button>
                     <div class="rdqd-value">
                       <span class="rdqd-number-display">{{ form.get('rdqdAttendu')?.value }}</span>
-                      <span class="rdqd-label">Attendu</span>
+                      <span class="rdqd-label">{{ 'CR_FORM.RDQD_EXPECTED' | translate }}</span>
                     </div>
                     <button type="button" class="rdqd-btn increment" (click)="incrementRdqdAttendu()" [disabled]="form.get('rdqdAttendu')?.value >= 7">
                       <i class="pi pi-plus"></i>
                     </button>
                   </div>
                 </div>
-                <small class="hint-text">Nombre de rendez-vous accomplis / attendus (max 7)</small>
+                <small class="hint-text">{{ 'CR_FORM.RDQD_HINT' | translate }}</small>
               </div>
             </div>
           </div>
@@ -143,12 +145,12 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <div class="form-card">
             <div class="card-header">
               <i class="pi pi-clock"></i>
-              <span>Temps de prière</span>
+              <span>{{ 'CR_FORM.PRAYER_TIME' | translate }}</span>
             </div>
             <div class="card-body">
               <div class="fields-grid">
                 <div class="field">
-                  <label for="priereSeuleMinutes">Prière seul(e) <span class="required">*</span></label>
+                  <label for="priereSeuleMinutes">{{ 'CR_FORM.PRAYER_ALONE' | translate }} <span class="required">*</span></label>
                   <p-inputNumber
                     id="priereSeuleMinutes"
                     formControlName="priereSeuleMinutes"
@@ -160,7 +162,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="priereCoupleMinutes">Prière en couple</label>
+                  <label for="priereCoupleMinutes">{{ 'CR_FORM.PRAYER_COUPLE' | translate }}</label>
                   <p-inputNumber
                     id="priereCoupleMinutes"
                     formControlName="priereCoupleMinutes"
@@ -172,7 +174,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="priereAvecEnfantsMinutes">Prière avec enfants</label>
+                  <label for="priereAvecEnfantsMinutes">{{ 'CR_FORM.PRAYER_WITH_CHILDREN' | translate }}</label>
                   <p-inputNumber
                     id="priereAvecEnfantsMinutes"
                     formControlName="priereAvecEnfantsMinutes"
@@ -184,7 +186,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="priereAutres">Autres prières</label>
+                  <label for="priereAutres">{{ 'CR_FORM.PRAYER_OTHER' | translate }}</label>
                   <p-inputNumber
                     id="priereAutres"
                     formControlName="priereAutres"
@@ -205,12 +207,12 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <div class="form-card">
             <div class="card-header">
               <i class="pi pi-book"></i>
-              <span>Étude de la Parole</span>
+              <span>{{ 'CR_FORM.WORD_STUDY' | translate }}</span>
             </div>
             <div class="card-body">
               <div class="fields-grid cols-2">
                 <div class="field">
-                  <label for="lectureBiblique">Chapitres lus</label>
+                  <label for="lectureBiblique">{{ 'CR_FORM.CHAPTERS_READ' | translate }}</label>
                   <p-inputNumber
                     id="lectureBiblique"
                     formControlName="lectureBiblique"
@@ -221,13 +223,13 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="livreBiblique">Livre de la Bible</label>
+                  <label for="livreBiblique">{{ 'CR_FORM.BIBLE_BOOK' | translate }}</label>
                   <input
                     id="livreBiblique"
                     type="text"
                     pInputText
                     formControlName="livreBiblique"
-                    placeholder="Ex: Matthieu"
+                    [placeholder]="'CR_FORM.BIBLE_BOOK_PLACEHOLDER' | translate"
                     class="w-full" />
                 </div>
               </div>
@@ -236,7 +238,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
 
               <div class="fields-grid cols-3">
                 <div class="field">
-                  <label for="litteraturePages">Pages lues</label>
+                  <label for="litteraturePages">{{ 'CR_FORM.PAGES_READ' | translate }}</label>
                   <p-inputNumber
                     id="litteraturePages"
                     formControlName="litteraturePages"
@@ -247,7 +249,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="litteratureTotal">Total pages</label>
+                  <label for="litteratureTotal">{{ 'CR_FORM.TOTAL_PAGES' | translate }}</label>
                   <p-inputNumber
                     id="litteratureTotal"
                     formControlName="litteratureTotal"
@@ -258,13 +260,13 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                 </div>
 
                 <div class="field">
-                  <label for="litteratureTitre">Titre du livre</label>
+                  <label for="litteratureTitre">{{ 'CR_FORM.BOOK_TITLE' | translate }}</label>
                   <input
                     id="litteratureTitre"
                     type="text"
                     pInputText
                     formControlName="litteratureTitre"
-                    placeholder="Titre du livre/magazine"
+                    [placeholder]="'CR_FORM.BOOK_TITLE_PLACEHOLDER' | translate"
                     class="w-full" />
                 </div>
               </div>
@@ -275,7 +277,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <div class="form-card">
             <div class="card-header">
               <i class="pi pi-heart"></i>
-              <span>Pratiques spirituelles</span>
+              <span>{{ 'CR_FORM.SPIRITUAL_PRACTICES' | translate }}</span>
             </div>
             <div class="card-body">
               <div class="checkbox-group">
@@ -287,7 +289,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                   </p-checkbox>
                   <label for="confession">
                     <i class="pi pi-heart-fill"></i>
-                    Confession effectuée
+                    {{ 'CR_FORM.CONFESSION_DONE' | translate }}
                   </label>
                 </div>
 
@@ -299,7 +301,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                   </p-checkbox>
                   <label for="jeune">
                     <i class="pi pi-sun"></i>
-                    Jeûne pratiqué
+                    {{ 'CR_FORM.FASTING_DONE' | translate }}
                   </label>
                 </div>
 
@@ -311,20 +313,20 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
                   </p-checkbox>
                   <label for="offrande">
                     <i class="pi pi-wallet"></i>
-                    Offrande donnée
+                    {{ 'CR_FORM.OFFERING_GIVEN' | translate }}
                   </label>
                 </div>
               </div>
 
               @if (form.get('jeune')?.value) {
                 <div class="field mt-3">
-                  <label for="typeJeune">Type de jeûne</label>
+                  <label for="typeJeune">{{ 'CR_FORM.FAST_TYPE' | translate }}</label>
                   <input
                     id="typeJeune"
                     type="text"
                     pInputText
                     formControlName="typeJeune"
-                    placeholder="Ex: Jeûne complet, jeûne de Daniel..."
+                    [placeholder]="'CR_FORM.FAST_TYPE_PLACEHOLDER' | translate"
                     class="w-full" />
                 </div>
               }
@@ -334,7 +336,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
               <div class="field">
                 <label for="evangelisation">
                   <i class="pi pi-users"></i>
-                  Personnes évangélisées
+                  {{ 'CR_FORM.PEOPLE_EVANGELIZED' | translate }}
                 </label>
                 <p-inputNumber
                   id="evangelisation"
@@ -353,18 +355,18 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <div class="form-card">
             <div class="card-header">
               <i class="pi pi-pencil"></i>
-              <span>Notes et commentaires</span>
+              <span>{{ 'CR_FORM.NOTES_SECTION' | translate }}</span>
             </div>
             <div class="card-body">
               <div class="field">
-                <label for="notes">Notes personnelles</label>
+                <label for="notes">{{ 'CR_FORM.PERSONAL_NOTES' | translate }}</label>
                 <textarea
                   id="notes"
                   pInputTextarea
                   formControlName="notes"
                   [rows]="4"
                   [autoResize]="true"
-                  placeholder="Ajoutez vos réflexions, prières exaucées, points de reconnaissance..."
+                  [placeholder]="'CR_FORM.NOTES_PLACEHOLDER' | translate"
                   class="w-full">
                 </textarea>
               </div>
@@ -377,7 +379,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <button
             pButton
             type="button"
-            label="Annuler"
+            [label]="'COMMON.CANCEL' | translate"
             icon="pi pi-times"
             class="btn-cancel-mobile"
             (click)="goBack()">
@@ -385,7 +387,7 @@ import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../
           <button
             pButton
             type="submit"
-            [label]="isEditMode ? 'Mettre à jour' : 'Enregistrer'"
+            [label]="isEditMode ? ('CR_FORM.UPDATE' | translate) : ('CR_FORM.SAVE' | translate)"
             icon="pi pi-save"
             class="btn-save-mobile"
             [loading]="loading"
@@ -952,6 +954,7 @@ export class CompteRenduFormComponent implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
 
   form!: FormGroup;
   isEditMode = false;
