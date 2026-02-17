@@ -943,11 +943,8 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
   statutOptions: { label: string; value: StatutCR }[] = [];
 
   ngOnInit(): void {
-    this.statutOptions = [
-      { label: this.translate.instant('CR_LIST.DRAFT'), value: StatutCR.BROUILLON },
-      { label: this.translate.instant('CR_LIST.SUBMITTED'), value: StatutCR.SOUMIS },
-      { label: this.translate.instant('CR_LIST.VALIDATED'), value: StatutCR.VALIDE }
-    ];
+    this.updateStatutOptions();
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateStatutOptions());
 
     // Subscribe to loading state
     this.facade.loading$.pipe(
@@ -1068,6 +1065,16 @@ export class CompteRenduListComponent implements OnInit, AfterViewInit, OnDestro
 
   viewCR(cr: CompteRendu): void {
     this.router.navigate(['/compte-rendu', cr.id]);
+  }
+
+  private updateStatutOptions(): void {
+    this.translate.get(['CR_LIST.DRAFT', 'CR_LIST.SUBMITTED', 'CR_LIST.VALIDATED']).subscribe(t => {
+      this.statutOptions = [
+        { label: t['CR_LIST.DRAFT'], value: StatutCR.BROUILLON },
+        { label: t['CR_LIST.SUBMITTED'], value: StatutCR.SOUMIS },
+        { label: t['CR_LIST.VALIDATED'], value: StatutCR.VALIDE }
+      ];
+    });
   }
 
   editCR(cr: CompteRendu): void {

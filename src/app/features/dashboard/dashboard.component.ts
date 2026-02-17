@@ -19,9 +19,10 @@ import { CompteRendu, DiscipleWithCRStatus } from '../../domain/models';
 import { StatutCR, Role, canViewOthersCR } from '../../domain/enums';
 
 interface StatCard {
-  title: string;
+  titleKey: string;
   value: string;
-  subValue?: string;
+  subValueKey?: string;
+  subValueParams?: any;
   icon: string;
   color: string;
 }
@@ -50,7 +51,7 @@ interface StatCard {
             <p-skeleton width="300px" height="1rem"></p-skeleton>
           } @else {
             <h1>{{ 'DASHBOARD.HELLO' | translate }} {{ userName }} <span class="wave">&#128075;</span></h1>
-            <p>{{ getGreetingMessage() }}</p>
+            <p>{{ greetingKey | translate }}</p>
           }
         </div>
         <div class="quick-actions">
@@ -67,7 +68,7 @@ interface StatCard {
 
       <!-- Stats Cards -->
       <section class="stats-section">
-        @for (stat of statsCards; track stat.title) {
+        @for (stat of statsCards; track stat.titleKey) {
           <div class="stat-card" [style.--accent-color]="stat.color">
             <div class="stat-icon">
               <i class="pi" [ngClass]="stat.icon"></i>
@@ -78,9 +79,9 @@ interface StatCard {
                 <p-skeleton width="80px" height="0.875rem"></p-skeleton>
               } @else {
                 <span class="stat-value">{{ stat.value }}</span>
-                <span class="stat-title">{{ stat.title }}</span>
-                @if (stat.subValue) {
-                  <span class="stat-sub">{{ stat.subValue }}</span>
+                <span class="stat-title">{{ stat.titleKey | translate }}</span>
+                @if (stat.subValueKey) {
+                  <span class="stat-sub">{{ stat.subValueKey | translate:stat.subValueParams }}</span>
                 }
               }
             </div>
@@ -318,11 +319,11 @@ interface StatCard {
                     </div>
                     <div class="stat-mini success">
                       <span class="stat-mini-value">{{ disciplesWithCRToday }}</span>
-                      <span class="stat-mini-label">CR aujourd'hui</span>
+                      <span class="stat-mini-label">{{ 'DASHBOARD.CR_TODAY' | translate }}</span>
                     </div>
                     <div class="stat-mini warning">
                       <span class="stat-mini-value">{{ disciplesWithAlert }}</span>
-                      <span class="stat-mini-label">Alertes</span>
+                      <span class="stat-mini-label">{{ 'COMMON.ALERTS' | translate }}</span>
                     </div>
                   </div>
 
@@ -341,17 +342,17 @@ interface StatCard {
                           <span class="disciple-name">{{ disciple.prenom }} {{ disciple.nom }}</span>
                           <span class="disciple-status">
                             @if (disciple.crAujourdhui) {
-                              <i class="pi pi-check-circle success"></i> CR rempli aujourd'hui
+                              <i class="pi pi-check-circle success"></i> {{ 'DASHBOARD.CR_FILLED_TODAY' | translate }}
                             } @else if (disciple.joursDepuisDernierCR !== null && disciple.joursDepuisDernierCR !== undefined) {
                               @if (disciple.joursDepuisDernierCR === 0) {
-                                <i class="pi pi-check-circle success"></i> CR rempli aujourd'hui
+                                <i class="pi pi-check-circle success"></i> {{ 'DASHBOARD.CR_FILLED_TODAY' | translate }}
                               } @else if (disciple.joursDepuisDernierCR <= 2) {
-                                <i class="pi pi-clock"></i> {{ disciple.joursDepuisDernierCR }}j sans CR
+                                <i class="pi pi-clock"></i> {{ 'DASHBOARD.DAYS_WITHOUT_CR' | translate:{days: disciple.joursDepuisDernierCR} }}
                               } @else {
-                                <i class="pi pi-exclamation-triangle warning"></i> {{ disciple.joursDepuisDernierCR }}j sans CR
+                                <i class="pi pi-exclamation-triangle warning"></i> {{ 'DASHBOARD.DAYS_WITHOUT_CR' | translate:{days: disciple.joursDepuisDernierCR} }}
                               }
                             } @else {
-                              <i class="pi pi-info-circle"></i> Aucun CR
+                              <i class="pi pi-info-circle"></i> {{ 'DASHBOARD.NO_CR' | translate }}
                             }
                           </span>
                         </div>
@@ -365,16 +366,16 @@ interface StatCard {
                   @if (disciples.length > 4) {
                     <button class="view-all-disciples" pRipple (click)="toggleShowAllDisciples()">
                       @if (showAllDisciples) {
-                        <i class="pi pi-chevron-up"></i> Réduire
+                        <i class="pi pi-chevron-up"></i> {{ 'DASHBOARD.COLLAPSE_LIST' | translate }}
                       } @else {
-                        <i class="pi pi-chevron-down"></i> Voir tous ({{ disciples.length }})
+                        <i class="pi pi-chevron-down"></i> {{ 'DASHBOARD.VIEW_ALL_DISCIPLES' | translate:{count: disciples.length} }}
                       }
                     </button>
                   }
                 } @else {
                   <div class="disciples-empty">
                     <i class="pi pi-user-plus"></i>
-                    <p>Aucun disciple assigné</p>
+                    <p>{{ 'DASHBOARD.NO_DISCIPLE_ASSIGNED' | translate }}</p>
                   </div>
                 }
               }
@@ -387,7 +388,7 @@ interface StatCard {
               <div class="verse-icon">
                 <i class="pi pi-book"></i>
               </div>
-              <h3>Verset du jour</h3>
+              <h3>{{ 'DASHBOARD.VERSE_OF_DAY' | translate }}</h3>
             </div>
             @if (verseLoading) {
               <div class="verse-skeleton">
@@ -1501,11 +1502,41 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.disciples.slice(0, 4);
   }
 
+  private chartLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+  private chartDatasetLabel = 'Minutes de prière';
+
   ngOnInit(): void {
     this.initChart();
     this.initDefaultStats();
     this.loadAllData();
     this.loadDailyVerse();
+    this.loadTranslatedChartLabels();
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.loadTranslatedChartLabels();
+    });
+  }
+
+  private loadTranslatedChartLabels(): void {
+    this.translate.get([
+      'DASHBOARD.CHART_MON', 'DASHBOARD.CHART_TUE', 'DASHBOARD.CHART_WED',
+      'DASHBOARD.CHART_THU', 'DASHBOARD.CHART_FRI', 'DASHBOARD.CHART_SAT',
+      'DASHBOARD.CHART_SUN', 'DASHBOARD.PRAYER_MINUTES'
+    ]).subscribe(t => {
+      this.chartLabels = [
+        t['DASHBOARD.CHART_MON'], t['DASHBOARD.CHART_TUE'], t['DASHBOARD.CHART_WED'],
+        t['DASHBOARD.CHART_THU'], t['DASHBOARD.CHART_FRI'], t['DASHBOARD.CHART_SAT'],
+        t['DASHBOARD.CHART_SUN']
+      ];
+      this.chartDatasetLabel = t['DASHBOARD.PRAYER_MINUTES'];
+      if (this.activityChartData) {
+        this.activityChartData = {
+          ...this.activityChartData,
+          labels: this.chartLabels,
+          datasets: this.activityChartData.datasets.map((ds: any) => ({ ...ds, label: this.chartDatasetLabel }))
+        };
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   /**
@@ -1551,10 +1582,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private initDefaultStats(): void {
     this.statsCards = [
-      { title: 'CR ce mois', value: '0', subValue: 'chargement...', icon: 'pi-file-edit', color: '#6366f1' },
-      { title: 'Temps de prière', value: '0h', subValue: 'ce mois', icon: 'pi-clock', color: '#8b5cf6' },
-      { title: 'Chapitres lus', value: '0', subValue: 'ce mois', icon: 'pi-book', color: '#22c55e' },
-      { title: 'Évangélisations', value: '0', subValue: 'personnes contactées', icon: 'pi-users', color: '#f59e0b' }
+      { titleKey: 'DASHBOARD.CR_THIS_MONTH', value: '0', subValueKey: 'COMMON.LOADING', icon: 'pi-file-edit', color: '#6366f1' },
+      { titleKey: 'DASHBOARD.PRAYER_TIME', value: '0h', subValueKey: 'COMMON.THIS_MONTH', icon: 'pi-clock', color: '#8b5cf6' },
+      { titleKey: 'DASHBOARD.CHAPTERS_READ', value: '0', subValueKey: 'COMMON.THIS_MONTH', icon: 'pi-book', color: '#22c55e' },
+      { titleKey: 'DASHBOARD.EVANGELIZATIONS', value: '0', subValueKey: 'DASHBOARD.PEOPLE_CONTACTED', icon: 'pi-users', color: '#f59e0b' }
     ];
   }
 
@@ -1725,30 +1756,31 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.statsCards = [
       {
-        title: 'CR ce mois',
+        titleKey: 'DASHBOARD.CR_THIS_MONTH',
         value: thisMonthCRs.length.toString(),
-        subValue: `sur ${this.totalExpectedCR} jours`,
+        subValueKey: 'DASHBOARD.ON_DAYS',
+        subValueParams: { days: this.totalExpectedCR },
         icon: 'pi-file-edit',
         color: '#6366f1'
       },
       {
-        title: 'Temps de prière',
+        titleKey: 'DASHBOARD.PRAYER_TIME',
         value: `${prayerHours}h${prayerMins > 0 ? prayerMins : ''}`,
-        subValue: 'ce mois',
+        subValueKey: 'COMMON.THIS_MONTH',
         icon: 'pi-clock',
         color: '#8b5cf6'
       },
       {
-        title: 'Chapitres lus',
+        titleKey: 'DASHBOARD.CHAPTERS_READ',
         value: totalBibleChapters.toString(),
-        subValue: 'ce mois',
+        subValueKey: 'COMMON.THIS_MONTH',
         icon: 'pi-book',
         color: '#22c55e'
       },
       {
-        title: 'Évangélisations',
+        titleKey: 'DASHBOARD.EVANGELIZATIONS',
         value: totalEvangelisation.toString(),
-        subValue: 'personnes contactées',
+        subValueKey: 'DASHBOARD.PEOPLE_CONTACTED',
         icon: 'pi-users',
         color: '#f59e0b'
       }
@@ -1766,7 +1798,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private updateChart(crs: CompteRendu[]): void {
-    const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     const prayerData = new Array(7).fill(0);
 
     const now = new Date();
@@ -1785,10 +1816,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.activityChartData = {
-      labels,
+      labels: this.chartLabels,
       datasets: [
         {
-          label: 'Minutes de prière',
+          label: this.chartDatasetLabel,
           data: prayerData,
           backgroundColor: 'rgba(99, 102, 241, 0.7)',
           borderColor: '#6366f1',
@@ -1807,10 +1838,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   initChart(): void {
     this.activityChartData = {
-      labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+      labels: this.chartLabels,
       datasets: [
         {
-          label: 'Minutes de prière',
+          label: this.chartDatasetLabel,
           data: [0, 0, 0, 0, 0, 0, 0],
           backgroundColor: 'rgba(99, 102, 241, 0.7)',
           borderColor: '#6366f1',
@@ -1855,15 +1886,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return attendu > 0 ? (accompli / attendu) * 100 : 0;
   }
 
-  getGreetingMessage(): string {
+  get greetingKey(): string {
     const hour = new Date().getHours();
-    if (hour < 12) {
-      return 'Que le Seigneur bénisse votre matinée !';
-    } else if (hour < 18) {
-      return 'Bonne continuation dans cette journée bénie !';
-    } else {
-      return 'Que Dieu veille sur votre soirée !';
-    }
+    if (hour < 12) return 'DASHBOARD.GREETING_MORNING';
+    if (hour < 18) return 'DASHBOARD.GREETING_AFTERNOON';
+    return 'DASHBOARD.GREETING_EVENING';
   }
 
   viewCR(cr: CompteRendu): void {

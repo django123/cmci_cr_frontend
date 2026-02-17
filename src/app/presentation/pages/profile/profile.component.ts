@@ -64,7 +64,7 @@ import { Role } from '../../../domain/enums';
                 <h2>{{ currentUser.prenom }} {{ currentUser.nom }}</h2>
                 <p class="user-email">{{ currentUser.email }}</p>
                 <p-tag
-                  [value]="getRoleLabel(currentUser.role)"
+                  [value]="getRoleKey(currentUser.role) | translate"
                   [severity]="getRoleSeverity(currentUser.role)"
                   styleClass="role-tag">
                 </p-tag>
@@ -137,7 +137,7 @@ import { Role } from '../../../domain/enums';
                   </div>
                   <div class="detail-content">
                     <span class="detail-label">{{ 'PROFILE.ROLE' | translate }}</span>
-                    <span class="detail-value">{{ getRoleLabel(currentUser.role) }}</span>
+                    <span class="detail-value">{{ getRoleKey(currentUser.role) | translate }}</span>
                   </div>
                 </div>
 
@@ -541,15 +541,16 @@ export class ProfileComponent implements OnInit {
     return (prenom + nom).toUpperCase();
   }
 
-  getRoleLabel(role: Role): string {
-    const labels: Record<Role, string> = {
-      [Role.ADMIN]: this.translate.instant('USERS.ROLE_ADMIN'),
-      [Role.PASTEUR]: this.translate.instant('USERS.ROLE_PASTEUR'),
-      [Role.LEADER]: this.translate.instant('USERS.ROLE_LEADER'),
-      [Role.FD]: this.translate.instant('USERS.ROLE_FD'),
-      [Role.FIDELE]: this.translate.instant('USERS.ROLE_FIDELE')
-    };
-    return labels[role] || role;
+  roleKeyMap: Record<string, string> = {
+    [Role.ADMIN]: 'USERS.ROLE_ADMIN',
+    [Role.PASTEUR]: 'USERS.ROLE_PASTEUR',
+    [Role.LEADER]: 'USERS.ROLE_LEADER',
+    [Role.FD]: 'USERS.ROLE_FD',
+    [Role.FIDELE]: 'USERS.ROLE_FIDELE'
+  };
+
+  getRoleKey(role: Role): string {
+    return this.roleKeyMap[role] || role;
   }
 
   getRoleSeverity(role: Role): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {

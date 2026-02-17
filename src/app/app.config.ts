@@ -8,8 +8,7 @@ import Aura from '@primeuix/themes/aura';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
 import localEn from '@angular/common/locales/en';
-import { importProvidersFrom } from '@angular/core';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
@@ -78,11 +77,9 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'fr-FR' },
 
     // ngx-translate
-    importProvidersFrom(
-      TranslateModule.forRoot({
-        defaultLanguage: 'fr'
-      })
-    ),
+    provideTranslateService({
+      defaultLanguage: 'fr'
+    }),
     provideTranslateHttpLoader({
       prefix: './assets/i18n/',
       suffix: '.json'

@@ -15,7 +15,7 @@ export class AppComponent {
 
   constructor() {
     this.translate.addLangs(['fr', 'en']);
-    this.translate.setDefaultLang('fr');
+    this.translate.setFallbackLang('fr');
     const savedLang = localStorage.getItem('app-lang') || 'fr';
     this.translate.use(savedLang);
   }

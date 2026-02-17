@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -6,10 +6,10 @@ import { RippleModule } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
 import { BadgeModule } from 'primeng/badge';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface MenuItem {
-  label: string;
+  labelKey: string;
   icon: string;
   route?: string;
   badge?: string;
@@ -54,7 +54,7 @@ interface MenuItem {
         <div class="nav-section">
           <span class="nav-section-title" *ngIf="!collapsed">{{ 'NAV.MAIN_MENU' | translate }}</span>
           <ul class="nav-list">
-            @for (item of mainMenuItems; track item.label) {
+            @for (item of mainMenuItems; track item.labelKey) {
               @if (item.separator) {
                 <li class="nav-separator"></li>
               } @else {
@@ -63,11 +63,11 @@ interface MenuItem {
                     [routerLink]="item.route"
                     routerLinkActive="active"
                     class="nav-link"
-                    [pTooltip]="collapsed ? item.label : ''"
+                    [pTooltip]="collapsed ? (item.labelKey | translate) : ''"
                     tooltipPosition="right"
                     pRipple>
                     <i class="pi" [ngClass]="item.icon"></i>
-                    <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+                    <span class="nav-label" *ngIf="!collapsed">{{ item.labelKey | translate }}</span>
                     @if (item.badge && !collapsed) {
                       <span class="nav-badge" [attr.data-severity]="item.badgeSeverity || 'info'">
                         {{ item.badge }}
@@ -83,17 +83,17 @@ interface MenuItem {
         <div class="nav-section">
           <span class="nav-section-title" *ngIf="!collapsed">{{ 'NAV.MANAGEMENT' | translate }}</span>
           <ul class="nav-list">
-            @for (item of managementItems; track item.label) {
+            @for (item of managementItems; track item.labelKey) {
               <li class="nav-item">
                 <a
                   [routerLink]="item.route"
                   routerLinkActive="active"
                   class="nav-link"
-                  [pTooltip]="collapsed ? item.label : ''"
+                  [pTooltip]="collapsed ? (item.labelKey | translate) : ''"
                   tooltipPosition="right"
                   pRipple>
                   <i class="pi" [ngClass]="item.icon"></i>
-                  <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+                  <span class="nav-label" *ngIf="!collapsed">{{ item.labelKey | translate }}</span>
                 </a>
               </li>
             }
@@ -371,33 +371,22 @@ interface MenuItem {
     }
   `]
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent {
   @Input() collapsed = false;
   @Output() collapsedChange = new EventEmitter<boolean>();
 
-  private readonly translate = inject(TranslateService);
+  mainMenuItems: MenuItem[] = [
+    { labelKey: 'NAV.DASHBOARD', icon: 'pi-home', route: '/dashboard' },
+    { labelKey: 'NAV.MY_CR', icon: 'pi-file-edit', route: '/compte-rendu' },
+    { labelKey: 'NAV.STATISTICS', icon: 'pi-chart-bar', route: '/statistics' }
+  ];
 
-  mainMenuItems: MenuItem[] = [];
-  managementItems: MenuItem[] = [];
-
-  ngOnInit(): void {
-    this.updateMenuLabels();
-    this.translate.onLangChange.subscribe(() => this.updateMenuLabels());
-  }
-
-  private updateMenuLabels(): void {
-    this.mainMenuItems = [
-      { label: this.translate.instant('NAV.DASHBOARD'), icon: 'pi-home', route: '/dashboard' },
-      { label: this.translate.instant('NAV.MY_CR'), icon: 'pi-file-edit', route: '/compte-rendu' },
-      { label: this.translate.instant('NAV.STATISTICS'), icon: 'pi-chart-bar', route: '/statistics' }
-    ];
-    this.managementItems = [
-      { label: this.translate.instant('NAV.VALIDATION'), icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn' },
-      { label: this.translate.instant('NAV.DISCIPLES'), icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info' },
-      { label: this.translate.instant('NAV.USERS'), icon: 'pi-users', route: '/users' },
-      { label: this.translate.instant('NAV.ADMINISTRATION'), icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger' }
-    ];
-  }
+  managementItems: MenuItem[] = [
+    { labelKey: 'NAV.VALIDATION', icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn' },
+    { labelKey: 'NAV.DISCIPLES', icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info' },
+    { labelKey: 'NAV.USERS', icon: 'pi-users', route: '/users' },
+    { labelKey: 'NAV.ADMINISTRATION', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger' }
+  ];
 
   toggleCollapse(): void {
     this.collapsed = !this.collapsed;

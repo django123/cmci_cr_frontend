@@ -1022,20 +1022,8 @@ export class UserAdminComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Initialize role options with translations
-    this.roleOptions = [
-      { label: this.translate.instant('USERS.ROLE_FIDELE'), value: 'FIDELE' },
-      { label: this.translate.instant('USERS.ROLE_FD'), value: 'FD' },
-      { label: this.translate.instant('USERS.ROLE_LEADER'), value: 'LEADER' },
-      { label: this.translate.instant('USERS.ROLE_PASTEUR'), value: 'PASTEUR' },
-      { label: this.translate.instant('USERS.ROLE_ADMIN'), value: 'ADMIN' }
-    ];
-
-    this.assignableRoles = [
-      { label: this.translate.instant('USERS.ROLE_FIDELE'), value: 'FIDELE' },
-      { label: this.translate.instant('USERS.ROLE_FD'), value: 'FD' },
-      { label: this.translate.instant('USERS.ROLE_LEADER'), value: 'LEADER' },
-      { label: this.translate.instant('USERS.ROLE_PASTEUR'), value: 'PASTEUR' }
-    ];
+    this.updateRoleOptions();
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateRoleOptions());
 
     // Subscribe to state
     this.facade.loading$.pipe(takeUntil(this.destroy$))
@@ -1102,6 +1090,27 @@ export class UserAdminComponent implements OnInit, OnDestroy {
       case 'FD': return 'warn';
       default: return 'secondary';
     }
+  }
+
+  private updateRoleOptions(): void {
+    this.translate.get([
+      'USERS.ROLE_FIDELE', 'USERS.ROLE_FD', 'USERS.ROLE_LEADER',
+      'USERS.ROLE_PASTEUR', 'USERS.ROLE_ADMIN'
+    ]).subscribe(t => {
+      this.roleOptions = [
+        { label: t['USERS.ROLE_FIDELE'], value: 'FIDELE' },
+        { label: t['USERS.ROLE_FD'], value: 'FD' },
+        { label: t['USERS.ROLE_LEADER'], value: 'LEADER' },
+        { label: t['USERS.ROLE_PASTEUR'], value: 'PASTEUR' },
+        { label: t['USERS.ROLE_ADMIN'], value: 'ADMIN' }
+      ];
+      this.assignableRoles = [
+        { label: t['USERS.ROLE_FIDELE'], value: 'FIDELE' },
+        { label: t['USERS.ROLE_FD'], value: 'FD' },
+        { label: t['USERS.ROLE_LEADER'], value: 'LEADER' },
+        { label: t['USERS.ROLE_PASTEUR'], value: 'PASTEUR' }
+      ];
+    });
   }
 
   openRoleDialog(user: KeycloakUser): void {
