@@ -1,0 +1,42 @@
+{
+  "FIDELE": {
+    "username": "fidele.test@cmci.org",
+    "password": "test123",
+    "role": "FIDELE",
+    "nom": "Test",
+    "prenom": "Fidele",
+    "id": "test-fidele-id"
+  },
+  "FD": {
+    "username": "fd.test@cmci.org",
+    "password": "test123",
+    "role": "FD",
+    "nom": "Test",
+    "prenom": "FD",
+    "id": "test-fd-id"
+  },
+  "LEADER": {
+    "username": "leader.test@cmci.org",
+    "password": "test123",
+    "role": "LEADER",
+    "nom": "Test",
+    "prenom": "Leader",
+    "id": "test-leader-id"
+  },
+  "PASTEUR": {
+    "username": "pasteur.test@cmci.org",
+    "password": "test123",
+    "role": "PASTEUR",
+    "nom": "Test",
+    "prenom": "Pasteur",
+    "id": "test-pasteur-id"
+  },
+  "ADMIN": {
+    "username": "admin.test@cmci.org",
+    "password": "test123",
+    "role": "ADMIN",
+    "nom": "Test",
+    "prenom": "Admin",
+    "id": "test-admin-id"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "complet": {
+    "date": "2026-02-15",
+    "rdqd": "3/5",
+    "priereSeuleMinutes": 45,
+    "priereCoupleMinutes": 20,
+    "priereAvecEnfantsMinutes": 15,
+    "lectureBiblique": 3,
+    "livreBiblique": "Matthieu",
+    "litteraturePages": 10,
+    "litteratureTotal": 200,
+    "litteratureTitre": "La marche chrétienne",
+    "priereAutres": 2,
+    "confession": true,
+    "jeune": true,
+    "typeJeune": "Complet",
+    "evangelisation": 2,
+    "offrande": true,
+    "notes": "Bon jour de marche spirituelle"
+  },
+  "minimal": {
+    "date": "2026-02-16",
+    "rdqd": "1/2",
+    "priereSeuleMinutes": 15
+  },
+  "avecJeune": {
+    "date": "2026-02-17",
+    "rdqd": "2/3",
+    "priereSeuleMinutes": 30,
+    "confession": false,
+    "jeune": true,
+    "typeJeune": "Partiel",
+    "offrande": false
+  }
+}

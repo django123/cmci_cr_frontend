@@ -1,0 +1,22 @@
+{
+  "region": {
+    "nom": "Centre",
+    "code": "CTR"
+  },
+  "zone": {
+    "nom": "Zone Nord",
+    "regionId": ""
+  },
+  "egliseLocale": {
+    "nom": "Eglise Locale Yaoundé",
+    "zoneId": "",
+    "adresse": "Rue de la Paix, Yaoundé",
+    "pasteurId": ""
+  },
+  "egliseMaison": {
+    "nom": "Eglise de Maison Bastos",
+    "egliseLocaleId": "",
+    "leaderId": "",
+    "adresse": "Quartier Bastos, Yaoundé"
+  }
+}
