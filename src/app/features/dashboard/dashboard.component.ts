@@ -16,7 +16,7 @@ import { CompteRenduFacade, SubordinatesFacade } from '../../application/use-cas
 import { AuthService } from '../../infrastructure/auth';
 import { VerseService, DailyVerse } from '../../infrastructure/services/verse.service';
 import { CompteRendu, DiscipleWithCRStatus } from '../../domain/models';
-import { StatutCR, Role, canViewOthersCR } from '../../domain/enums';
+import { StatutCR, canViewOthersCR } from '../../domain/enums';
 
 interface StatCard {
   titleKey: string;
@@ -1610,14 +1610,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         // Vérifier si l'utilisateur peut voir les disciples
         this.canViewDisciples = canViewOthersCR(user.role);
 
-        // Charger les CRs selon le rôle
+        // Charger les CRs personnels (stats et CRs récents) — tous les rôles
+        this.crFacade.loadMyCompteRendus();
+
+        // Charger les disciples directs pour FD/Leader/Pasteur/Admin
         if (this.canViewDisciples) {
-          const supervisedUserIds = this.getSupervisedUserIds(user.role);
-          this.crFacade.loadCompteRendusForUsers(supervisedUserIds);
-          // Charger les disciples
           this.loadDisciples();
         } else {
-          this.crFacade.loadMyCompteRendus();
           this.disciplesLoading = false;
         }
       } else {
@@ -1677,34 +1676,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private forceUIUpdate(): void {
     this.cdr.detectChanges();
     this.appRef.tick();
-  }
-
-  /**
-   * Retourne les IDs des utilisateurs supervisés selon le rôle
-   * Basé sur les données seed de la BD
-   */
-  private getSupervisedUserIds(role: Role): string[] {
-    // IDs des fidèles de la BD (V2__seed_data.sql)
-    const allFideles = [
-      'd1000000-0000-0000-0000-000000000030', // Paul FIDELE (fidele@cmci.org)
-      'd1000000-0000-0000-0000-000000000031', // Antoine LAMBERT
-      'd1000000-0000-0000-0000-000000000032', // Julie DUBOIS
-      'd1000000-0000-0000-0000-000000000033', // Lucas MARTINEZ
-      'd1000000-0000-0000-0000-000000000034', // Emma GARCIA
-      'd1000000-0000-0000-0000-000000000035', // Nathan THOMAS
-      'd1000000-0000-0000-0000-000000000036', // Camille FAURE (Lyon)
-      'd1000000-0000-0000-0000-000000000037', // David FOTSO (Douala)
-      'd1000000-0000-0000-0000-000000000038', // Esther TAMBA (Douala)
-    ];
-
-    // Admin voit tous les fidèles
-    if (role === Role.ADMIN || role === Role.PASTEUR) {
-      return allFideles;
-    }
-
-    // FD/Leader voient les fidèles de leur église de maison
-    // Pour simplifier, on retourne tous les fidèles pour l'instant
-    return allFideles;
   }
 
   private calculateStats(crs: CompteRendu[]): void {

@@ -152,6 +152,13 @@ export class CompteRenduFacade {
   }
 
   /**
+   * Récupère les CRs d'un utilisateur (sans modifier l'état global)
+   */
+  getCRsForUser(userId: string): Observable<CompteRendu[]> {
+    return this.repository.getByUserId(userId);
+  }
+
+  /**
    * Récupère un compte rendu par son ID
    */
   getById(id: string): Observable<CompteRendu> {

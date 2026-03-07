@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +7,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { AvatarModule } from 'primeng/avatar';
 import { BadgeModule } from 'primeng/badge';
 import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '../../infrastructure/auth/auth.service';
+import { RoleLabels } from '../../domain/enums';
 
 interface MenuItem {
   labelKey: string;
@@ -15,6 +17,7 @@ interface MenuItem {
   badge?: string;
   badgeSeverity?: 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
   separator?: boolean;
+  roles?: string[];
 }
 
 @Component({
@@ -83,7 +86,7 @@ interface MenuItem {
         <div class="nav-section">
           <span class="nav-section-title" *ngIf="!collapsed">{{ 'NAV.MANAGEMENT' | translate }}</span>
           <ul class="nav-list">
-            @for (item of managementItems; track item.labelKey) {
+            @for (item of visibleManagementItems; track item.labelKey) {
               <li class="nav-item">
                 <a
                   [routerLink]="item.route"
@@ -111,8 +114,8 @@ interface MenuItem {
             styleClass="user-avatar">
           </p-avatar>
           <div class="user-info">
-            <span class="user-name">Administrateur</span>
-            <span class="user-role">Super Admin</span>
+            <span class="user-name">{{ currentUserName }}</span>
+            <span class="user-role">{{ currentUserRole }}</span>
           </div>
         </div>
         <a
@@ -371,22 +374,45 @@ interface MenuItem {
     }
   `]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   @Input() collapsed = false;
   @Output() collapsedChange = new EventEmitter<boolean>();
+
+  private readonly authService = inject(AuthService);
+
+  currentUserName = '';
+  currentUserRole = '';
 
   mainMenuItems: MenuItem[] = [
     { labelKey: 'NAV.DASHBOARD', icon: 'pi-home', route: '/dashboard' },
     { labelKey: 'NAV.MY_CR', icon: 'pi-file-edit', route: '/compte-rendu' },
-    { labelKey: 'NAV.STATISTICS', icon: 'pi-chart-bar', route: '/statistics' }
+    { labelKey: 'NAV.STATISTICS', icon: 'pi-chart-bar', route: '/statistics' },
+    { labelKey: 'NAV.MY_CHURCH', icon: 'pi-building', route: '/mon-eglise' }
   ];
 
   managementItems: MenuItem[] = [
-    { labelKey: 'NAV.VALIDATION', icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn' },
-    { labelKey: 'NAV.DISCIPLES', icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info' },
-    { labelKey: 'NAV.USERS', icon: 'pi-users', route: '/users' },
-    { labelKey: 'NAV.ADMINISTRATION', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger' }
+    { labelKey: 'NAV.VALIDATION', icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn', roles: ['FD', 'LEADER', 'PASTEUR', 'ADMIN'] },
+    { labelKey: 'NAV.DISCIPLES', icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info', roles: ['FD', 'LEADER', 'PASTEUR', 'ADMIN'] },
+    { labelKey: 'NAV.USERS', icon: 'pi-users', route: '/users', roles: ['PASTEUR', 'ADMIN'] },
+    { labelKey: 'NAV.ADMINISTRATION', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger', roles: ['PASTEUR', 'ADMIN'] }
   ];
+
+  get visibleManagementItems(): MenuItem[] {
+    return this.managementItems.filter(item =>
+      !item.roles || this.authService.hasAnyRole(item.roles)
+    );
+  }
+
+  ngOnInit(): void {
+    try {
+      this.authService.getCurrentUser().subscribe(user => {
+        this.currentUserName = [user.prenom, user.nom].filter(Boolean).join(' ') || user.email;
+        this.currentUserRole = RoleLabels[user.role] || user.role;
+      });
+    } catch {
+      // Token non disponible (mode offline ou test)
+    }
+  }
 
   toggleCollapse(): void {
     this.collapsed = !this.collapsed;

@@ -22,6 +22,7 @@ import { takeUntil } from 'rxjs/operators';
 import { DisciplesFacade, UserAdminFacade } from '../../../application/use-cases';
 import { Disciple, KeycloakUser } from '../../../domain/models';
 import { Role, RoleLabels } from '../../../domain/enums';
+import { HasRoleDirective } from '../../../shared/directives/has-role.directive';
 
 @Component({
   selector: 'app-disciples',
@@ -41,7 +42,8 @@ import { Role, RoleLabels } from '../../../domain/enums';
     SkeletonModule,
     TabViewModule,
     ConfirmDialogModule,
-    TranslateModule
+    TranslateModule,
+    HasRoleDirective
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -312,6 +314,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                     <td>
                       <div class="actions-cell">
                         <button
+                          *appHasRole="['FD']"
                           pButton
                           icon="pi pi-user-plus"
                           class="p-button-text p-button-rounded p-button-success"
@@ -320,6 +323,7 @@ import { Role, RoleLabels } from '../../../domain/enums';
                           (click)="assignToMe(disciple)">
                         </button>
                         <button
+                          *appHasRole="['FD', 'LEADER', 'PASTEUR', 'ADMIN']"
                           pButton
                           icon="pi pi-share-alt"
                           class="p-button-text p-button-rounded"

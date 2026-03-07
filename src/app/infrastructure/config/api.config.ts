@@ -98,6 +98,11 @@ export const ApiEndpoints = {
     BY_ID: (id: string) => `/admin/eglises-maison/${id}`
   },
 
+  // Mon Eglise de Maison
+  MON_EGLISE: {
+    BASE: '/mon-eglise'
+  },
+
   // Geographie (seed)
   GEOGRAPHY: {
     SEED: '/admin/geography/seed'

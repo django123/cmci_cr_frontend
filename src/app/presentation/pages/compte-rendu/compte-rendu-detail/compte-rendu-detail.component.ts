@@ -15,7 +15,7 @@ import { TimelineModule } from 'primeng/timeline';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-import { CompteRenduFacade, CommentaireFacade } from '../../../../application/use-cases';
+import { CompteRenduFacade, CommentaireFacade, UserAdminFacade } from '../../../../application/use-cases';
 import { CompteRendu, Commentaire, getAuteurFullName, getAuteurInitials } from '../../../../domain/models';
 import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
 import { AuthService } from '../../../../infrastructure/auth';
@@ -121,6 +121,14 @@ import { AuthService } from '../../../../infrastructure/auth';
 
         <!-- Meta Bar -->
         <div class="meta-bar">
+          <div class="meta-bar-item">
+            <i class="pi pi-user"></i>
+            <div class="meta-bar-content">
+              <span class="meta-bar-label">{{ 'CR_DETAIL.AUTHOR' | translate }}</span>
+              <span class="meta-bar-value">{{ authorName || '—' }}</span>
+            </div>
+          </div>
+          <div class="meta-bar-divider"></div>
           <div class="meta-bar-item">
             <i class="pi pi-clock"></i>
             <div class="meta-bar-content">
@@ -1310,6 +1318,7 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   private readonly crFacade = inject(CompteRenduFacade);
   private readonly commentaireFacade = inject(CommentaireFacade);
   private readonly authService = inject(AuthService);
+  private readonly userAdminFacade = inject(UserAdminFacade);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -1320,6 +1329,7 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   loading = true;
   newComment = '';
   sendingComment = false;
+  authorName = '';
 
   canEdit = false;
   canSubmit = false;
@@ -1348,6 +1358,7 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
         this.compteRendu = cr;
         this.loading = false;
         this.updatePermissions();
+        this.resolveAuthorName(cr);
       },
       error: () => {
         this.loading = false;
@@ -1375,6 +1386,32 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
     this.canSubmit = this.compteRendu.statut === StatutCR.BROUILLON;
     this.canValidate = this.compteRendu.statut === StatutCR.SOUMIS && this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN']);
     this.canComment = this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN']);
+  }
+
+  private resolveAuthorName(cr: CompteRendu): void {
+    // 1. Backend a déjà fourni le nom (après redémarrage backend)
+    if (cr.utilisateurNom) {
+      this.authorName = [cr.utilisateurPrenom, cr.utilisateurNom].filter(Boolean).join(' ');
+      return;
+    }
+
+    // 2. Comparer avec l'utilisateur courant (FIDELE voit son propre CR)
+    this.authService.getCurrentUser().subscribe({
+      next: (currentUser) => {
+        if (currentUser.id === cr.utilisateurId) {
+          this.authorName = [currentUser.prenom, currentUser.nom].filter(Boolean).join(' ') || currentUser.email;
+        } else if (this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN'])) {
+          // 3. FD/LEADER/PASTEUR/ADMIN : chercher le nom de l'auteur via l'API admin
+          this.userAdminFacade.getUserById(cr.utilisateurId).subscribe({
+            next: (user) => { this.authorName = user.nomComplet; },
+            error: () => { this.authorName = cr.utilisateurId; }
+          });
+        } else {
+          this.authorName = '—';
+        }
+      },
+      error: () => { this.authorName = '—'; }
+    });
   }
 
   getRdqdPercentage(): number {

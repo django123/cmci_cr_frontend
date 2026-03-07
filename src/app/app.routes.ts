@@ -79,6 +79,12 @@ export const routes: Routes = [
           .then(m => m.DisciplesComponent),
         data: { roles: [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
+      // Mon Eglise de Maison (tous les utilisateurs authentifiés)
+      {
+        path: 'mon-eglise',
+        loadComponent: () => import('./presentation/pages/mon-eglise/mon-eglise.component')
+          .then(m => m.MonEgliseComponent)
+      },
       // Profil utilisateur
       {
         path: 'profile',

@@ -6,6 +6,8 @@ import { StatutCR } from '../../../domain/enums';
 export interface CompteRenduResponseDTO {
   id: string;
   utilisateurId: string;
+  utilisateurNom?: string;
+  utilisateurPrenom?: string;
   date: string;
   rdqd: string;
   priereSeule: string;

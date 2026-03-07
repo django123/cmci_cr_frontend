@@ -7,6 +7,8 @@ import { StatutCR } from '../enums';
 export interface CompteRendu {
   readonly id: string;
   readonly utilisateurId: string;
+  readonly utilisateurNom?: string;
+  readonly utilisateurPrenom?: string;
   readonly date: Date;
   readonly rdqd: string;
 

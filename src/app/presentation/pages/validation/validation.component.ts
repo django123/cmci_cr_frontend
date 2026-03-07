@@ -16,8 +16,21 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { CompteRenduFacade } from '../../../application/use-cases';
-import { CompteRendu } from '../../../domain/models';
+import { SubordinatesFacade } from '../../../application/use-cases/subordinates/subordinates.facade';
 import { StatutCR } from '../../../domain/enums';
+
+interface ValidationRow {
+  id: string;
+  utilisateurId: string;
+  utilisateurNom: string;
+  date: Date;
+  rdqd: string;
+  priereSeule: string;
+  lectureBiblique?: number;
+  statut: StatutCR;
+  vuParFd: boolean;
+  updatedAt: Date;
+}
 
 @Component({
   selector: 'app-validation',
@@ -80,7 +93,7 @@ import { StatutCR } from '../../../domain/enums';
           </div>
         } @else {
           <p-table
-            [value]="pendingCRs"
+            [value]="allRows"
             [paginator]="true"
             [rows]="10"
             [rowsPerPageOptions]="[5, 10, 25, 50]"
@@ -144,10 +157,17 @@ import { StatutCR } from '../../../domain/enums';
                       <i class="pi pi-user"></i>
                     </div>
                     <div class="user-info">
-                      <span class="user-name">{{ 'VALIDATION.USER_LABEL' | translate }}</span>
-                      @if (!cr.vuParFd) {
-                        <span class="new-badge">{{ 'VALIDATION.NEW_BADGE' | translate }}</span>
-                      }
+                      <span class="user-name">{{ cr.utilisateurNom }}</span>
+                      <div class="user-badges">
+                        @if (cr.statut === 'SOUMIS') {
+                          <span class="status-badge status-soumis">{{ 'VALIDATION.STATUS_SOUMIS' | translate }}</span>
+                        } @else if (cr.statut === 'VALIDE') {
+                          <span class="status-badge status-valide">{{ 'VALIDATION.STATUS_VALIDE' | translate }}</span>
+                        }
+                        @if (!cr.vuParFd) {
+                          <span class="new-badge">{{ 'VALIDATION.NEW_BADGE' | translate }}</span>
+                        }
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -198,14 +218,16 @@ import { StatutCR } from '../../../domain/enums';
                       (click)="viewCR(cr)">
                       <i class="pi pi-eye"></i>
                     </button>
-                    <button
-                      class="action-btn validate"
-                      [pTooltip]="'VALIDATION.VALIDATE_TOOLTIP' | translate"
-                      tooltipPosition="top"
-                      pRipple
-                      (click)="validateCR(cr)">
-                      <i class="pi pi-check"></i>
-                    </button>
+                    @if (cr.statut === 'SOUMIS') {
+                      <button
+                        class="action-btn validate"
+                        [pTooltip]="'VALIDATION.VALIDATE_TOOLTIP' | translate"
+                        tooltipPosition="top"
+                        pRipple
+                        (click)="validateCR(cr)">
+                        <i class="pi pi-check"></i>
+                      </button>
+                    }
                     @if (!cr.vuParFd) {
                       <button
                         class="action-btn mark-seen"
@@ -544,13 +566,40 @@ import { StatutCR } from '../../../domain/enums';
       font-size: 0.9375rem;
     }
 
+    .user-badges {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: white;
+      padding: 0.125rem 0.5rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      width: fit-content;
+
+      &.status-soumis {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      }
+
+      &.status-valide {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      }
+    }
+
     .new-badge {
       display: inline-flex;
       align-items: center;
       font-size: 0.6rem;
       font-weight: 700;
       color: white;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       padding: 0.125rem 0.5rem;
       border-radius: 6px;
       text-transform: uppercase;
@@ -760,6 +809,7 @@ import { StatutCR } from '../../../domain/enums';
 })
 export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly facade = inject(CompteRenduFacade);
+  private readonly subordinatesFacade = inject(SubordinatesFacade);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -769,46 +819,16 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly translate = inject(TranslateService);
   private readonly destroy$ = new Subject<void>();
 
-  // State - directly bound properties for immediate rendering
-  pendingCRs: CompteRendu[] = [];
+  allRows: ValidationRow[] = [];
   pendingCount = 0;
   validatedCount = 0;
   isLoading = true;
 
   ngOnInit(): void {
-    // Subscribe to loading state
-    this.facade.loading$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(loading => {
-      this.isLoading = loading;
-      if (!loading) {
-        this.forceUIUpdate();
-      }
-    });
-
-    // Subscribe to soumis (submitted) CRs
-    this.facade.soumis$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(crs => {
-      this.pendingCRs = crs;
-      this.pendingCount = crs.length;
-      this.forceUIUpdate();
-    });
-
-    // Subscribe to validated CRs count
-    this.facade.valides$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(crs => {
-      this.validatedCount = crs.length;
-      this.forceUIUpdate();
-    });
-
-    // Load data
-    this.facade.loadMyCompteRendus();
+    this.loadValidationData();
   }
 
   ngAfterViewInit(): void {
-    // Force resize after view is initialized
     this.ngZone.runOutsideAngular(() => {
       setTimeout(() => {
         this.ngZone.run(() => {
@@ -824,21 +844,65 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private loadValidationData(): void {
+    this.isLoading = true;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 1);
+
+    // Validation = uniquement les CRs des disciples directs (fdId = currentUserId)
+    // Pour FD/LEADER/PASTEUR : findByFdId côté backend
+    // Pour ADMIN : tous les utilisateurs actifs
+    this.subordinatesFacade.getSubordinatesCR(startDate, endDate).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (subordinates) => {
+        this.allRows = subordinates.flatMap(sub =>
+          sub.compteRendus
+            .filter(cr => cr.statut !== StatutCR.BROUILLON)
+            .map(cr => ({
+              id: cr.id,
+              utilisateurId: sub.utilisateurId,
+              utilisateurNom: sub.nomComplet,
+              date: cr.date instanceof Date ? cr.date : new Date(String(cr.date)),
+              rdqd: cr.rdqd,
+              priereSeule: cr.priereSeule || '00:00',
+              lectureBiblique: cr.lectureBiblique,
+              statut: cr.statut,
+              vuParFd: cr.vuParFd,
+              updatedAt: cr.createdAt instanceof Date ? cr.createdAt : new Date(String(cr.createdAt))
+            }))
+        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        this.pendingCount = this.allRows.filter(r => r.statut === StatutCR.SOUMIS).length;
+        this.validatedCount = this.allRows.filter(r => r.statut === StatutCR.VALIDE).length;
+        this.isLoading = false;
+        this.forceUIUpdate();
+      },
+      error: (err) => {
+        console.error('[Validation] Error loading data:', err);
+        this.isLoading = false;
+        this.forceUIUpdate();
+      }
+    });
+  }
+
   private forceUIUpdate(): void {
     this.cdr.detectChanges();
     this.appRef.tick();
   }
 
   getRdqdPercentage(rdqd: string): number {
+    if (!rdqd) return 0;
     const [accompli, attendu] = rdqd.split('/').map(Number);
     return attendu > 0 ? (accompli / attendu) * 100 : 0;
   }
 
-  viewCR(cr: CompteRendu): void {
+  viewCR(cr: ValidationRow): void {
     this.router.navigate(['/compte-rendu', cr.id]);
   }
 
-  validateCR(cr: CompteRendu): void {
+  validateCR(cr: ValidationRow): void {
     this.confirmationService.confirm({
       message: this.translate.instant('VALIDATION.CONFIRM_VALIDATE'),
       header: this.translate.instant('COMMON.CONFIRMATION'),
@@ -846,11 +910,18 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
       accept: () => {
         this.facade.validate(cr.id).subscribe({
           next: () => {
+            const row = this.allRows.find(r => r.id === cr.id);
+            if (row) {
+              row.statut = StatutCR.VALIDE;
+              this.pendingCount = this.allRows.filter(r => r.statut === StatutCR.SOUMIS).length;
+              this.validatedCount = this.allRows.filter(r => r.statut === StatutCR.VALIDE).length;
+            }
             this.messageService.add({
               severity: 'success',
               summary: this.translate.instant('COMMON.SUCCESS'),
               detail: this.translate.instant('VALIDATION.SUCCESS_VALIDATE')
             });
+            this.forceUIUpdate();
           },
           error: (err) => {
             this.messageService.add({
@@ -864,14 +935,17 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  markAsViewed(cr: CompteRendu): void {
+  markAsViewed(cr: ValidationRow): void {
     this.facade.markAsViewed(cr.id).subscribe({
       next: () => {
+        const row = this.allRows.find(r => r.id === cr.id);
+        if (row) row.vuParFd = true;
         this.messageService.add({
           severity: 'info',
           summary: this.translate.instant('COMMON.INFO'),
           detail: this.translate.instant('VALIDATION.MARKED_AS_SEEN')
         });
+        this.forceUIUpdate();
       }
     });
   }

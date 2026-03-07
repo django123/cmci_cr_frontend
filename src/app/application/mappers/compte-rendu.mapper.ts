@@ -20,6 +20,8 @@ export class CompteRenduMapper {
     return {
       id: dto.id,
       utilisateurId: dto.utilisateurId,
+      utilisateurNom: dto.utilisateurNom,
+      utilisateurPrenom: dto.utilisateurPrenom,
       date: new Date(dto.date),
       rdqd: dto.rdqd || '',
       priereSeule: dto.priereSeule || '',
