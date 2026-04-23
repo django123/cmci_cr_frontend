@@ -7,17 +7,17 @@ const tokenUrl = `${keycloakUrl}/realms/${keycloakRealm}/protocol/openid-connect
 
 // Utilisateurs de test par rôle (à configurer dans Keycloak)
 const testUsers: Record<string, { username: string; password: string }> = {
-  FIDELE: { username: 'fidele.test@cmci.org', password: 'test123' },
-  FD: { username: 'fd.test@cmci.org', password: 'test123' },
-  LEADER: { username: 'leader.test@cmci.org', password: 'test123' },
-  PASTEUR: { username: 'pasteur.test@cmci.org', password: 'test123' },
-  ADMIN: { username: 'admin.test@cmci.org', password: 'test123' }
+  FIDELE: { username: 'fidele@cmci.org', password: 'fidele123' },
+  FD: { username: 'fd@cmci.org', password: 'fd123456' },
+  LEADER: { username: 'leader@cmci.org', password: 'leader123' },
+  PASTEUR: { username: 'pasteur@cmci.org', password: 'pasteur123' },
+  ADMIN: { username: 'admin@cmci.org', password: 'admin123' }
 };
 
 /**
  * Login programmatique via Keycloak token endpoint (sans passer par l'UI)
  */
-Cypress.Commands.add('login', (role: string) => {
+Cypress.Commands.add('login', (role: string, path = '/') => {
   const user = testUsers[role];
   if (!user) {
     throw new Error(`Unknown role: ${role}. Available: ${Object.keys(testUsers).join(', ')}`);
@@ -38,20 +38,29 @@ Cypress.Commands.add('login', (role: string) => {
     },
     failOnStatusCode: false
   }).then((response) => {
+    let tokens: { accessToken: string; refreshToken: string; idToken: string };
+
     if (response.status !== 200) {
       cy.log(`Keycloak login failed (${response.status}), using mock token for ${role}`);
-      // Fallback: mock token pour les tests sans Keycloak
-      const mockToken = createMockToken(role, user.username);
-      setKeycloakSession(mockToken, role);
-      return;
+      tokens = createMockToken(role, user.username);
+    } else {
+      const { access_token, refresh_token, id_token } = response.body;
+      tokens = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        idToken: id_token
+      };
     }
 
-    const { access_token, refresh_token, id_token } = response.body;
-    setKeycloakSession({
-      accessToken: access_token,
-      refreshToken: refresh_token,
-      idToken: id_token
-    }, role);
+    cy.intercept('**/api/**', (req) => {
+      req.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+    });
+
+    cy.visit(path, {
+      onBeforeLoad(win) {
+        setKeycloakSession(win, tokens, role);
+      }
+    });
   });
 });
 
@@ -95,10 +104,11 @@ function createMockToken(role: string, username: string) {
  * Stocke la session Keycloak dans le localStorage
  */
 function setKeycloakSession(
+  win: Window,
   tokens: { accessToken: string; refreshToken: string; idToken: string },
   role: string
 ) {
-  const kcKey = `kc-callback-cmci-cr-frontend`;
+  captureBrowserErrors(win);
 
   // Parse le payload du token pour les infos utilisateur
   let tokenParsed: Record<string, unknown>;
@@ -110,16 +120,64 @@ function setKeycloakSession(
   }
 
   // Stocker dans localStorage comme keycloak-angular le fait
-  window.localStorage.setItem('kc-access-token', tokens.accessToken);
-  window.localStorage.setItem('kc-refresh-token', tokens.refreshToken);
-  window.localStorage.setItem('kc-id-token', tokens.idToken);
-  window.localStorage.setItem('kc-token-parsed', JSON.stringify(tokenParsed));
-  window.localStorage.setItem('kc-user-role', role);
+  win.localStorage.setItem('kc-access-token', tokens.accessToken);
+  win.localStorage.setItem('kc-refresh-token', tokens.refreshToken);
+  win.localStorage.setItem('kc-id-token', tokens.idToken);
+  win.localStorage.setItem('kc-token-parsed', JSON.stringify(tokenParsed));
+  win.localStorage.setItem('kc-user-role', role);
+}
 
-  // Intercept les appels API pour injecter le token Bearer
-  cy.intercept('**/api/**', (req) => {
-    req.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+function captureBrowserErrors(win: Window) {
+  const messages: string[] = [];
+  const storeMessages = () => {
+    win.localStorage.setItem('cypress-browser-messages', JSON.stringify(messages));
+  };
+  const serializeValue = (value: unknown): string => {
+    if (value instanceof Error) {
+      return `${value.name}: ${value.message}\n${value.stack || ''}`.trim();
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      const maybeError = value as { name?: string; message?: string; stack?: string };
+      if (maybeError.message || maybeError.stack) {
+        return `${maybeError.name || 'Error'}: ${maybeError.message || ''}\n${maybeError.stack || ''}`.trim();
+      }
+
+      try {
+        return JSON.stringify(value, Object.getOwnPropertyNames(value));
+      } catch {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  };
+  const pushMessage = (level: string, value: unknown) => {
+    messages.push(`[${level}] ${serializeValue(value)}`);
+    storeMessages();
+  };
+
+  const originalConsoleError = win.console.error.bind(win.console);
+  win.console.error = (...args: unknown[]) => {
+    args.forEach(arg => pushMessage('console.error', arg));
+    originalConsoleError(...args);
+  };
+
+  const originalConsoleWarn = win.console.warn.bind(win.console);
+  win.console.warn = (...args: unknown[]) => {
+    args.forEach(arg => pushMessage('console.warn', arg));
+    originalConsoleWarn(...args);
+  };
+
+  win.addEventListener('error', (event) => {
+    pushMessage('window.error', event.error || event.message);
   });
+
+  win.addEventListener('unhandledrejection', (event) => {
+    pushMessage('unhandledrejection', event.reason);
+  });
+
+  storeMessages();
 }
 
 /**
@@ -127,12 +185,15 @@ function setKeycloakSession(
  */
 Cypress.Commands.add('logout', () => {
   cy.log('Logging out');
-  window.localStorage.removeItem('kc-access-token');
-  window.localStorage.removeItem('kc-refresh-token');
-  window.localStorage.removeItem('kc-id-token');
-  window.localStorage.removeItem('kc-token-parsed');
-  window.localStorage.removeItem('kc-user-role');
-  cy.visit('/auth/login');
+  cy.visit('/auth/login', {
+    onBeforeLoad(win) {
+      win.localStorage.removeItem('kc-access-token');
+      win.localStorage.removeItem('kc-refresh-token');
+      win.localStorage.removeItem('kc-id-token');
+      win.localStorage.removeItem('kc-token-parsed');
+      win.localStorage.removeItem('kc-user-role');
+    }
+  });
 });
 
 /**

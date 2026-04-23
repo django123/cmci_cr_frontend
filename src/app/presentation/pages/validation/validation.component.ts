@@ -23,6 +23,8 @@ interface ValidationRow {
   id: string;
   utilisateurId: string;
   utilisateurNom: string;
+  utilisateurRole: string;
+  utilisateurRoleLabel: string;
   date: Date;
   rdqd: string;
   priereSeule: string;
@@ -106,7 +108,7 @@ interface ValidationRow {
                 <th style="width: 18%">
                   <div class="th-content">
                     <i class="pi pi-user"></i>
-                    <span>{{ 'VALIDATION.FAITHFUL' | translate }}</span>
+                    <span>{{ 'VALIDATION.USER_LABEL' | translate }}</span>
                   </div>
                 </th>
                 <th pSortableColumn="date" style="width: 15%">
@@ -159,6 +161,7 @@ interface ValidationRow {
                     <div class="user-info">
                       <span class="user-name">{{ cr.utilisateurNom }}</span>
                       <div class="user-badges">
+                        <span class="role-badge">{{ cr.utilisateurRoleLabel }}</span>
                         @if (cr.statut === 'SOUMIS') {
                           <span class="status-badge status-soumis">{{ 'VALIDATION.STATUS_SOUMIS' | translate }}</span>
                         } @else if (cr.statut === 'VALIDE') {
@@ -607,6 +610,19 @@ interface ValidationRow {
       width: fit-content;
     }
 
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #475569;
+      background: #e2e8f0;
+      padding: 0.125rem 0.5rem;
+      border-radius: 6px;
+      width: fit-content;
+      letter-spacing: 0.03em;
+    }
+
     /* Custom Cell Styles */
     .date-cell {
       display: flex;
@@ -850,9 +866,6 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - 1);
 
-    // Validation = uniquement les CRs des disciples directs (fdId = currentUserId)
-    // Pour FD/LEADER/PASTEUR : findByFdId côté backend
-    // Pour ADMIN : tous les utilisateurs actifs
     this.subordinatesFacade.getSubordinatesCR(startDate, endDate).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
@@ -864,6 +877,8 @@ export class ValidationComponent implements OnInit, AfterViewInit, OnDestroy {
               id: cr.id,
               utilisateurId: sub.utilisateurId,
               utilisateurNom: sub.nomComplet,
+              utilisateurRole: sub.role,
+              utilisateurRoleLabel: sub.roleDisplayName,
               date: cr.date instanceof Date ? cr.date : new Date(String(cr.date)),
               rdqd: cr.rdqd,
               priereSeule: cr.priereSeule || '00:00',

@@ -16,7 +16,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { CompteRenduFacade, CommentaireFacade, UserAdminFacade } from '../../../../application/use-cases';
-import { CompteRendu, Commentaire, getAuteurFullName, getAuteurInitials } from '../../../../domain/models';
+import { CompteRendu, Commentaire, Utilisateur, getAuteurFullName, getAuteurInitials } from '../../../../domain/models';
 import { StatutCR, StatutCRLabels } from '../../../../domain/enums';
 import { AuthService } from '../../../../infrastructure/auth';
 
@@ -1330,6 +1330,7 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   newComment = '';
   sendingComment = false;
   authorName = '';
+  currentUser: Utilisateur | null = null;
 
   canEdit = false;
   canSubmit = false;
@@ -1337,6 +1338,13 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   canComment = false;
 
   ngOnInit(): void {
+    this.authService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.currentUser = user;
+        this.updatePermissions();
+      }
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadCompteRendu(id);
@@ -1380,12 +1388,15 @@ export class CompteRenduDetailComponent implements OnInit, AfterViewInit {
   }
 
   private updatePermissions(): void {
-    if (!this.compteRendu) return;
+    if (!this.compteRendu || !this.currentUser) return;
 
-    this.canEdit = this.compteRendu.statut === StatutCR.BROUILLON;
-    this.canSubmit = this.compteRendu.statut === StatutCR.BROUILLON;
-    this.canValidate = this.compteRendu.statut === StatutCR.SOUMIS && this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN']);
-    this.canComment = this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN']);
+    const isOwner = this.currentUser.id === this.compteRendu.utilisateurId;
+    const canModerate = this.authService.hasAnyRole(['FD', 'LEADER', 'PASTEUR', 'ADMIN']);
+
+    this.canEdit = isOwner && this.compteRendu.statut === StatutCR.BROUILLON;
+    this.canSubmit = isOwner && this.compteRendu.statut === StatutCR.BROUILLON;
+    this.canValidate = !isOwner && this.compteRendu.statut === StatutCR.SOUMIS && canModerate;
+    this.canComment = !isOwner && canModerate;
   }
 
   private resolveAuthorName(cr: CompteRendu): void {

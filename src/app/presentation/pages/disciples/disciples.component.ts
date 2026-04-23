@@ -23,6 +23,7 @@ import { DisciplesFacade, UserAdminFacade } from '../../../application/use-cases
 import { Disciple, KeycloakUser } from '../../../domain/models';
 import { Role, RoleLabels } from '../../../domain/enums';
 import { HasRoleDirective } from '../../../shared/directives/has-role.directive';
+import { AuthService } from '../../../infrastructure/auth/auth.service';
 
 @Component({
   selector: 'app-disciples',
@@ -323,7 +324,7 @@ import { HasRoleDirective } from '../../../shared/directives/has-role.directive'
                           (click)="assignToMe(disciple)">
                         </button>
                         <button
-                          *appHasRole="['FD', 'LEADER', 'PASTEUR', 'ADMIN']"
+                          *appHasRole="['LEADER', 'PASTEUR', 'ADMIN']"
                           pButton
                           icon="pi pi-share-alt"
                           class="p-button-text p-button-rounded"
@@ -912,6 +913,7 @@ import { HasRoleDirective } from '../../../shared/directives/has-role.directive'
 export class DisciplesComponent implements OnInit, OnDestroy {
   private readonly disciplesFacade = inject(DisciplesFacade);
   private readonly userAdminFacade = inject(UserAdminFacade);
+  private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly translate = inject(TranslateService);
@@ -931,6 +933,7 @@ export class DisciplesComponent implements OnInit, OnDestroy {
   showAssignDialog = false;
   selectedDisciple: Disciple | null = null;
   selectedFD: string | null = null;
+  currentUserId: string | null = null;
 
   // Filtered lists
   get filteredMyDisciples(): Disciple[] {
@@ -954,6 +957,9 @@ export class DisciplesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.authService.getCurrentUser().pipe(takeUntil(this.destroy$))
+      .subscribe(user => this.currentUserId = user.id);
+
     this.disciplesFacade.loading$.pipe(takeUntil(this.destroy$))
       .subscribe(loading => this.isLoading = loading);
 
@@ -965,7 +971,7 @@ export class DisciplesComponent implements OnInit, OnDestroy {
 
     this.userAdminFacade.users$.pipe(takeUntil(this.destroy$))
       .subscribe(users => {
-        this.fdList = users.filter(u => u.role === Role.FD || u.role === Role.LEADER || u.role === Role.PASTEUR);
+        this.fdList = users.filter(u => u.role === Role.FD);
       });
 
     this.refreshData();
@@ -979,19 +985,39 @@ export class DisciplesComponent implements OnInit, OnDestroy {
   refreshData(): void {
     this.disciplesFacade.loadMyDisciples();
     this.disciplesFacade.loadUnassignedDisciples();
-    this.userAdminFacade.loadUsersByRole(Role.FD);
+    if (this.authService.hasAnyRole([Role.LEADER, Role.PASTEUR, Role.ADMIN])) {
+      this.userAdminFacade.loadUsersByRole(Role.FD);
+    } else {
+      this.fdList = [];
+    }
   }
 
   assignToMe(disciple: Disciple): void {
+    if (!this.currentUserId) {
+      return;
+    }
+
     this.confirmationService.confirm({
       message: this.translate.instant('DISCIPLES.CONFIRM_ASSIGN_TO_ME', {name: disciple.nomComplet}),
       header: this.translate.instant('COMMON.CONFIRMATION'),
       icon: 'pi pi-user-plus',
       accept: () => {
-        this.messageService.add({
-          severity: 'info',
-          summary: this.translate.instant('COMMON.INFO'),
-          detail: this.translate.instant('DISCIPLES.ASSIGN_SUCCESS', {name: disciple.nomComplet})
+        this.disciplesFacade.assignToFD(disciple.id, this.currentUserId!).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.translate.instant('COMMON.SUCCESS'),
+              detail: this.translate.instant('DISCIPLES.ASSIGN_SUCCESS', {name: disciple.nomComplet})
+            });
+            this.refreshData();
+          },
+          error: (err) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: this.translate.instant('COMMON.ERROR'),
+              detail: err.message
+            });
+          }
         });
       }
     });

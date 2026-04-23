@@ -393,8 +393,8 @@ export class SidebarComponent implements OnInit {
   managementItems: MenuItem[] = [
     { labelKey: 'NAV.VALIDATION', icon: 'pi-check-square', route: '/validation', badge: 'FD+', badgeSeverity: 'warn', roles: ['FD', 'LEADER', 'PASTEUR', 'ADMIN'] },
     { labelKey: 'NAV.DISCIPLES', icon: 'pi-heart', route: '/disciples', badge: 'FD+', badgeSeverity: 'info', roles: ['FD', 'LEADER', 'PASTEUR', 'ADMIN'] },
-    { labelKey: 'NAV.USERS', icon: 'pi-users', route: '/users', roles: ['PASTEUR', 'ADMIN'] },
-    { labelKey: 'NAV.ADMINISTRATION', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger', roles: ['PASTEUR', 'ADMIN'] }
+    { labelKey: 'NAV.USERS', icon: 'pi-users', route: '/users', roles: ['LEADER', 'PASTEUR', 'ADMIN'] },
+    { labelKey: 'NAV.ADMINISTRATION', icon: 'pi-building', route: '/administration', badge: 'Admin', badgeSeverity: 'danger', roles: ['LEADER', 'PASTEUR', 'ADMIN'] }
   ];
 
   get visibleManagementItems(): MenuItem[] {

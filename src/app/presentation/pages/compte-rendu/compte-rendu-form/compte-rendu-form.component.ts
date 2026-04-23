@@ -17,6 +17,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { CompteRenduFacade } from '../../../../application/use-cases';
 import { CreateCompteRenduRequest, UpdateCompteRenduRequest } from '../../../../domain/repositories';
+import { AuthService } from '../../../../infrastructure/auth/auth.service';
+import { StatutCR } from '../../../../domain/enums';
 
 @Component({
   selector: 'app-compte-rendu-form',
@@ -952,6 +954,7 @@ export class CompteRenduFormComponent implements OnInit, AfterViewInit {
   private readonly facade = inject(CompteRenduFacade);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
@@ -961,9 +964,11 @@ export class CompteRenduFormComponent implements OnInit, AfterViewInit {
   crId: string | null = null;
   loading = false;
   today = new Date();
+  currentUserId: string | null = null;
 
   ngOnInit(): void {
     this.initForm();
+    this.authService.getCurrentUser().subscribe(user => this.currentUserId = user.id);
 
     this.crId = this.route.snapshot.paramMap.get('id');
     if (this.crId && this.crId !== 'new') {
@@ -1008,6 +1013,16 @@ export class CompteRenduFormComponent implements OnInit, AfterViewInit {
 
     this.facade.getById(this.crId).subscribe({
       next: (cr) => {
+        if (!this.currentUserId || cr.utilisateurId !== this.currentUserId) {
+          this.handleEditAccessDenied('Vous ne pouvez modifier que vos propres comptes rendus.');
+          return;
+        }
+
+        if (cr.statut !== StatutCR.BROUILLON) {
+          this.handleEditAccessDenied('Seuls les comptes rendus en brouillon peuvent être modifiés.');
+          return;
+        }
+
         const [accompli, attendu] = cr.rdqd.split('/').map(Number);
         const priereMinutes = this.parseTimeToMinutes(cr.priereSeule);
 
@@ -1038,8 +1053,18 @@ export class CompteRenduFormComponent implements OnInit, AfterViewInit {
           summary: 'Erreur',
           detail: 'Impossible de charger le compte rendu'
         });
+        this.goBack();
       }
     });
+  }
+
+  private handleEditAccessDenied(detail: string): void {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Accès refusé',
+      detail
+    });
+    this.goBack();
   }
 
   private parseTimeToMinutes(time: string): number {

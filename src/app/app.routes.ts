@@ -56,27 +56,31 @@ export const routes: Routes = [
         path: 'validation',
         loadComponent: () => import('./presentation/pages/validation/validation.component')
           .then(m => m.ValidationComponent),
+        canActivate: [AuthGuard],
         data: { roles: [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
-      // Administration des utilisateurs (Pasteur, Admin)
+      // Administration des utilisateurs (Leader, Pasteur, Admin)
       {
         path: 'users',
         loadComponent: () => import('./presentation/pages/user-admin/user-admin.component')
           .then(m => m.UserAdminComponent),
-        data: { roles: [Role.PASTEUR, Role.ADMIN] }
+        canActivate: [AuthGuard],
+        data: { roles: [Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
-      // Administration hierarchie ecclesiale (Pasteur, Admin)
+      // Administration hierarchie ecclesiale (Leader, Pasteur, Admin)
       {
         path: 'administration',
         loadComponent: () => import('./presentation/pages/administration/administration.component')
           .then(m => m.AdministrationComponent),
-        data: { roles: [Role.PASTEUR, Role.ADMIN] }
+        canActivate: [AuthGuard],
+        data: { roles: [Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
       // Gestion des disciples (FD, Leader, Pasteur, Admin)
       {
         path: 'disciples',
         loadComponent: () => import('./presentation/pages/disciples/disciples.component')
           .then(m => m.DisciplesComponent),
+        canActivate: [AuthGuard],
         data: { roles: [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN] }
       },
       // Mon Eglise de Maison (tous les utilisateurs authentifiés)

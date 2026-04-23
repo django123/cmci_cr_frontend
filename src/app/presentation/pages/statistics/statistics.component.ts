@@ -1,18 +1,46 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { MessageService } from 'primeng/api';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { StatisticsFacade } from '../../../application/use-cases';
-import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../../../domain/models';
+import { SubordinatesFacade } from '../../../application/use-cases/subordinates/subordinates.facade';
+import {
+  Statistics,
+  SubordinateStatistics,
+  formatMinutesToReadable,
+  getTotalPrayerMinutes
+} from '../../../domain/models';
+import { AuthService } from '../../../infrastructure/auth/auth.service';
+import { Role } from '../../../domain/enums';
+
+type StatisticsMode = 'personal' | 'group';
+type ExportFormat = 'pdf' | 'excel';
+type AlertSeverity = 'success' | 'warn' | 'danger';
+
+interface GroupSummary {
+  memberCount: number;
+  totalReports: number;
+  averageRegularity: number;
+  averageRdqd: number;
+  totalPrayerMinutes: number;
+  totalChaptersRead: number;
+  totalEvangelized: number;
+  totalConfessions: number;
+  totalFasts: number;
+  warningCount: number;
+  criticalCount: number;
+  alertCount: number;
+}
 
 @Component({
   selector: 'app-statistics',
@@ -22,32 +50,53 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
     FormsModule,
     CalendarModule,
     ButtonModule,
-    ProgressBarModule,
     SkeletonModule,
     TooltipModule,
     RippleModule,
     ToastModule,
+    TableModule,
+    TagModule,
     TranslateModule
   ],
   providers: [MessageService],
   template: `
     <p-toast></p-toast>
-    <div class="statistics-container">
-      <!-- Page Header -->
+
+    <div class="statistics-page">
       <div class="page-header">
-        <div class="header-left">
-          <div class="header-title">
-            <div class="title-icon">
-              <i class="pi pi-chart-bar"></i>
-            </div>
-            <div>
-              <h1>{{ 'STATISTICS.TITLE' | translate }}</h1>
-              <p>{{ 'STATISTICS.SUBTITLE' | translate }}</p>
-            </div>
+        <div class="header-main">
+          <div class="title-icon">
+            <i class="pi pi-chart-bar"></i>
+          </div>
+          <div class="title-copy">
+            <h1>{{ getTitleKey() | translate }}</h1>
+            <p>{{ getSubtitleKey() | translate }}</p>
           </div>
         </div>
-        <div class="header-right">
-          <div class="period-selector">
+
+        <div class="header-actions">
+          @if (canViewGroupStats) {
+            <div class="mode-switch">
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="statsMode === 'personal'"
+                (click)="setMode('personal')">
+                <i class="pi pi-user"></i>
+                <span>{{ 'STATISTICS.MODE_PERSONAL' | translate }}</span>
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                [class.active]="statsMode === 'group'"
+                (click)="setMode('group')">
+                <i class="pi pi-users"></i>
+                <span>{{ 'STATISTICS.MODE_GROUP' | translate }}</span>
+              </button>
+            </div>
+          }
+
+          <div class="period-controls">
             <p-calendar
               [(ngModel)]="dateRange"
               selectionMode="range"
@@ -59,33 +108,36 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               appendTo="body"
               styleClass="period-calendar">
             </p-calendar>
-            <div class="period-buttons">
+
+            <div class="quick-range">
               <button
                 type="button"
-                class="period-btn"
+                class="range-btn"
                 [class.active]="activePeriod === 'month'"
                 (click)="loadCurrentMonth()">
                 <i class="pi pi-calendar"></i>
-                {{ 'STATISTICS.THIS_MONTH' | translate }}
+                <span>{{ 'STATISTICS.THIS_MONTH' | translate }}</span>
               </button>
               <button
                 type="button"
-                class="period-btn"
+                class="range-btn"
                 [class.active]="activePeriod === 'week'"
                 (click)="loadCurrentWeek()">
                 <i class="pi pi-calendar-minus"></i>
-                {{ 'STATISTICS.THIS_WEEK' | translate }}
+                <span>{{ 'STATISTICS.THIS_WEEK' | translate }}</span>
               </button>
             </div>
           </div>
-          <div class="export-buttons">
+
+          <div class="export-actions">
             <button
-              class="btn-export btn-pdf"
-              (click)="downloadFile('pdf')"
-              [disabled]="!currentStats || exporting"
-              [pTooltip]="'STATISTICS.DOWNLOAD_PDF' | translate"
+              type="button"
+              class="export-btn pdf"
+              [disabled]="!hasDataToExport() || exporting"
+              [pTooltip]="getPdfTooltipKey() | translate"
               tooltipPosition="bottom"
-              pRipple>
+              pRipple
+              (click)="downloadFile('pdf')">
               @if (exporting && exportFormat === 'pdf') {
                 <i class="pi pi-spin pi-spinner"></i>
               } @else {
@@ -93,13 +145,15 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
               }
               <span>PDF</span>
             </button>
+
             <button
-              class="btn-export btn-excel"
-              (click)="downloadFile('excel')"
-              [disabled]="!currentStats || exporting"
-              [pTooltip]="'STATISTICS.DOWNLOAD_EXCEL' | translate"
+              type="button"
+              class="export-btn excel"
+              [disabled]="!hasDataToExport() || exporting"
+              [pTooltip]="getExcelTooltipKey() | translate"
               tooltipPosition="bottom"
-              pRipple>
+              pRipple
+              (click)="downloadFile('excel')">
               @if (exporting && exportFormat === 'excel') {
                 <i class="pi pi-spin pi-spinner"></i>
               } @else {
@@ -111,859 +165,607 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
         </div>
       </div>
 
-      @if (loading$ | async) {
-        <!-- Loading Skeletons -->
+      @if (isLoading) {
         <div class="stats-grid">
           @for (i of [1,2,3,4]; track i) {
-            <div class="stat-card-skeleton">
-              <p-skeleton width="48px" height="48px" borderRadius="12px"></p-skeleton>
-              <div class="skeleton-info">
-                <p-skeleton width="80px" height="2rem"></p-skeleton>
-                <p-skeleton width="120px" height="0.875rem"></p-skeleton>
+            <div class="stat-card skeleton-card">
+              <p-skeleton width="48px" height="48px" borderRadius="14px"></p-skeleton>
+              <div class="skeleton-lines">
+                <p-skeleton width="120px" height="1.8rem"></p-skeleton>
+                <p-skeleton width="160px" height="0.875rem"></p-skeleton>
               </div>
             </div>
           }
         </div>
-        <div class="charts-grid">
-          <div class="section-skeleton">
-            <p-skeleton height="250px" borderRadius="16px"></p-skeleton>
-          </div>
-          <div class="section-skeleton">
-            <p-skeleton height="250px" borderRadius="16px"></p-skeleton>
-          </div>
-        </div>
-      } @else if (currentStats) {
-        <!-- Stats Overview Cards -->
+      } @else if (statsMode === 'personal' && currentStats) {
         <div class="stats-grid">
-          <div class="stat-card primary">
-            <div class="stat-icon">
-              <i class="pi pi-file-edit"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ currentStats.totalCRSoumis }}</span>
-              <span class="stat-label">{{ 'STATISTICS.CR_SUBMITTED' | translate }}</span>
-            </div>
-            @if (currentStats.totalCRValides > 0) {
-              <div class="stat-badge success">
-                <i class="pi pi-check"></i> {{ currentStats.totalCRValides }} {{ 'STATISTICS.CR_VALIDATED_COUNT' | translate }}
-              </div>
-            }
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.CR_SUBMITTED' | translate }}</span>
+            <span class="stat-value">{{ currentStats.totalCRSoumis }}</span>
+            <span class="stat-meta">{{ currentStats.totalCRValides }} {{ 'STATISTICS.CR_VALIDATED_COUNT' | translate }}</span>
           </div>
 
-          <div class="stat-card success">
-            <div class="stat-icon">
-              <i class="pi pi-check-circle"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ currentStats.tauxCompletion | number:'1.0-1' }}%</span>
-              <span class="stat-label">{{ 'STATISTICS.COMPLETION_RATE' | translate }}</span>
-            </div>
-            <div class="stat-progress">
-              <div class="progress-bar">
-                <div class="progress-fill success-fill"
-                     [style.width.%]="currentStats.tauxCompletion"></div>
-              </div>
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.COMPLETION_RATE' | translate }}</span>
+            <span class="stat-value">{{ currentStats.tauxCompletion | number:'1.0-1' }}%</span>
+            <div class="mini-bar">
+              <div class="mini-bar-fill" [style.width.%]="currentStats.tauxCompletion"></div>
             </div>
           </div>
 
-          <div class="stat-card info">
-            <div class="stat-icon">
-              <i class="pi pi-sun"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ currentStats.moyenneRDQD | number:'1.0-1' }}%</span>
-              <span class="stat-label">{{ 'STATISTICS.RDQD_AVERAGE' | translate }}</span>
-            </div>
-            <div class="stat-sub">
-              {{ currentStats.totalRDQDAccomplis }}/{{ currentStats.totalRDQDAttendus }} {{ 'STATISTICS.RDQD_COMPLETED' | translate }}
-            </div>
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.RDQD_AVERAGE' | translate }}</span>
+            <span class="stat-value">{{ currentStats.moyenneRDQD | number:'1.0-1' }}%</span>
+            <span class="stat-meta">
+              {{ currentStats.totalRDQDAccomplis }}/{{ currentStats.totalRDQDAttendus }}
+              {{ 'STATISTICS.RDQD_COMPLETED' | translate }}
+            </span>
           </div>
 
-          <div class="stat-card warning">
-            <div class="stat-icon">
-              <i class="pi pi-users"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-value">{{ currentStats.totalEvangelisations }}</span>
-              <span class="stat-label">{{ 'STATISTICS.EVANGELIZATIONS' | translate }}</span>
-            </div>
-            <div class="stat-sub">
-              {{ currentStats.totalContactsUtiles }} {{ 'STATISTICS.USEFUL_CONTACTS' | translate }}
-            </div>
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.TOTAL_PRAYER_TIME' | translate }}</span>
+            <span class="stat-value">{{ getTotalPrayerDisplay() }}</span>
+            <span class="stat-meta">{{ 'STATISTICS.PRAYER_TIME' | translate }}</span>
           </div>
         </div>
 
-        <!-- Detail Sections -->
-        <div class="charts-grid">
-          <!-- Prayer Section -->
-          <div class="detail-section">
+        <div class="details-grid">
+          <section class="detail-card">
             <div class="section-header">
-              <div class="section-title">
-                <i class="pi pi-heart"></i>
-                <span>{{ 'STATISTICS.PRAYER_TIME' | translate }}</span>
+              <h2>{{ 'STATISTICS.PRAYER_TIME' | translate }}</h2>
+            </div>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.SOLO_PRAYER' | translate }}</span>
+                <strong>{{ formatMinutes(currentStats.totalPriereSeuleMinutes) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.COUPLE_PRAYER' | translate }}</span>
+                <strong>{{ formatMinutes(currentStats.totalPriereCoupleMinutes) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.FAMILY_PRAYER' | translate }}</span>
+                <strong>{{ formatMinutes(currentStats.totalPriereAvecEnfantsMinutes) }}</strong>
               </div>
             </div>
-            <div class="section-body">
-              <div class="prayer-total-card">
-                <span class="prayer-total-value">{{ getTotalPrayerDisplay() }}</span>
-                <span class="prayer-total-label">{{ 'STATISTICS.TOTAL_PRAYER_TIME' | translate }}</span>
+          </section>
+
+          <section class="detail-card">
+            <div class="section-header">
+              <h2>{{ 'STATISTICS.STUDY_ACTIVITIES' | translate }}</h2>
+            </div>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.STUDY_TIME' | translate }}</span>
+                <strong>{{ formatMinutes(currentStats.totalTempsEtudeParoleMinutes) }}</strong>
               </div>
-              <div class="prayer-breakdown">
-                <div class="prayer-row">
-                  <div class="prayer-row-header">
-                    <span class="prayer-dot solo"></span>
-                    <span class="prayer-name">{{ 'STATISTICS.SOLO_PRAYER' | translate }}</span>
-                    <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereSeuleMinutes) }}</span>
-                  </div>
-                  <div class="prayer-bar-track">
-                    <div class="prayer-bar-fill solo" [style.width.%]="getPrayerPercentageDisplay('solo')"></div>
-                  </div>
-                </div>
-                <div class="prayer-row">
-                  <div class="prayer-row-header">
-                    <span class="prayer-dot couple"></span>
-                    <span class="prayer-name">{{ 'STATISTICS.COUPLE_PRAYER' | translate }}</span>
-                    <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereCoupleMinutes) }}</span>
-                  </div>
-                  <div class="prayer-bar-track">
-                    <div class="prayer-bar-fill couple" [style.width.%]="getPrayerPercentageDisplay('couple')"></div>
-                  </div>
-                </div>
-                <div class="prayer-row">
-                  <div class="prayer-row-header">
-                    <span class="prayer-dot family"></span>
-                    <span class="prayer-name">{{ 'STATISTICS.FAMILY_PRAYER' | translate }}</span>
-                    <span class="prayer-time">{{ formatMinutes(currentStats.totalPriereAvecEnfantsMinutes) }}</span>
-                  </div>
-                  <div class="prayer-bar-track">
-                    <div class="prayer-bar-fill family" [style.width.%]="getPrayerPercentageDisplay('family')"></div>
-                  </div>
-                </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.USEFUL_CONTACTS_LABEL' | translate }}</span>
+                <strong>{{ currentStats.totalContactsUtiles }}</strong>
               </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.WORSHIP_INVITATIONS' | translate }}</span>
+                <strong>{{ currentStats.totalInvitationsCulte }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.EVANGELIZATIONS_LABEL' | translate }}</span>
+                <strong>{{ currentStats.totalEvangelisations }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="detail-card detail-card-wide">
+            <div class="section-header">
+              <h2>{{ 'STATISTICS.OFFERINGS' | translate }}</h2>
+            </div>
+            <div class="offering-block">
+              <span class="offering-currency">XAF</span>
+              <span class="offering-value">{{ currentStats.totalOffrandes | number:'1.0-0' }}</span>
+            </div>
+            <p class="offering-caption">{{ 'STATISTICS.TOTAL_OFFERINGS' | translate }}</p>
+          </section>
+        </div>
+      } @else if (statsMode === 'group' && groupStatistics.length > 0) {
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.GROUP_MEMBERS' | translate }}</span>
+            <span class="stat-value">{{ groupSummary.memberCount }}</span>
+            <span class="stat-meta">{{ 'STATISTICS.GROUP_ACTIVE_SCOPE' | translate }}</span>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.GROUP_TOTAL_REPORTS' | translate }}</span>
+            <span class="stat-value">{{ groupSummary.totalReports }}</span>
+            <span class="stat-meta">{{ 'STATISTICS.CR_SUBMITTED' | translate }}</span>
+          </div>
+
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.GROUP_AVG_REGULARITY' | translate }}</span>
+            <span class="stat-value">{{ groupSummary.averageRegularity | number:'1.0-1' }}%</span>
+            <div class="mini-bar">
+              <div class="mini-bar-fill" [style.width.%]="groupSummary.averageRegularity"></div>
             </div>
           </div>
 
-          <!-- Study & Activities Section -->
-          <div class="detail-section">
-            <div class="section-header">
-              <div class="section-title">
-                <i class="pi pi-book"></i>
-                <span>{{ 'STATISTICS.STUDY_ACTIVITIES' | translate }}</span>
-              </div>
-            </div>
-            <div class="section-body">
-              <div class="activity-grid">
-                <div class="activity-card">
-                  <div class="activity-icon study">
-                    <i class="pi pi-book"></i>
-                  </div>
-                  <span class="activity-value">{{ formatMinutes(currentStats.totalTempsEtudeParoleMinutes) }}</span>
-                  <span class="activity-label">{{ 'STATISTICS.STUDY_TIME' | translate }}</span>
-                </div>
-                <div class="activity-card">
-                  <div class="activity-icon contacts">
-                    <i class="pi pi-phone"></i>
-                  </div>
-                  <span class="activity-value">{{ currentStats.totalContactsUtiles }}</span>
-                  <span class="activity-label">{{ 'STATISTICS.USEFUL_CONTACTS_LABEL' | translate }}</span>
-                </div>
-                <div class="activity-card">
-                  <div class="activity-icon invitations">
-                    <i class="pi pi-building"></i>
-                  </div>
-                  <span class="activity-value">{{ currentStats.totalInvitationsCulte }}</span>
-                  <span class="activity-label">{{ 'STATISTICS.WORSHIP_INVITATIONS' | translate }}</span>
-                </div>
-                <div class="activity-card">
-                  <div class="activity-icon evangelism">
-                    <i class="pi pi-megaphone"></i>
-                  </div>
-                  <span class="activity-value">{{ currentStats.totalEvangelisations }}</span>
-                  <span class="activity-label">{{ 'STATISTICS.EVANGELIZATIONS_LABEL' | translate }}</span>
-                </div>
-              </div>
-            </div>
+          <div class="stat-card">
+            <span class="stat-kicker">{{ 'STATISTICS.GROUP_ALERTS' | translate }}</span>
+            <span class="stat-value">{{ groupSummary.alertCount }}</span>
+            <span class="stat-meta">
+              {{ groupSummary.criticalCount }} {{ 'STATISTICS.ALERT_CRITICAL' | translate }},
+              {{ groupSummary.warningCount }} {{ 'STATISTICS.ALERT_WARNING' | translate }}
+            </span>
           </div>
         </div>
 
-        <!-- Offerings Section -->
-        <div class="detail-section offerings-section">
+        <div class="details-grid">
+          <section class="detail-card">
+            <div class="section-header">
+              <h2>{{ 'STATISTICS.GROUP_SPIRITUAL_ACTIVITY' | translate }}</h2>
+            </div>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.RDQD_AVERAGE' | translate }}</span>
+                <strong>{{ groupSummary.averageRdqd | number:'1.0-1' }}%</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.TOTAL_PRAYER_TIME' | translate }}</span>
+                <strong>{{ formatMinutes(groupSummary.totalPrayerMinutes) }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.GROUP_TOTAL_CHAPTERS' | translate }}</span>
+                <strong>{{ groupSummary.totalChaptersRead }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.EVANGELIZATIONS_LABEL' | translate }}</span>
+                <strong>{{ groupSummary.totalEvangelized }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="detail-card">
+            <div class="section-header">
+              <h2>{{ 'STATISTICS.GROUP_PRACTICES' | translate }}</h2>
+            </div>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.GROUP_CONFESSIONS' | translate }}</span>
+                <strong>{{ groupSummary.totalConfessions }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.GROUP_FASTS' | translate }}</span>
+                <strong>{{ groupSummary.totalFasts }}</strong>
+              </div>
+              <div class="metric-row">
+                <span>{{ 'STATISTICS.GROUP_WITH_ALERTS' | translate }}</span>
+                <strong>{{ groupSummary.alertCount }}</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="table-card">
           <div class="section-header">
-            <div class="section-title">
-              <i class="pi pi-wallet"></i>
-              <span>{{ 'STATISTICS.OFFERINGS' | translate }}</span>
-            </div>
+            <h2>{{ 'STATISTICS.GROUP_MEMBER_LIST' | translate }}</h2>
           </div>
-          <div class="section-body">
-            <div class="offerings-display">
-              <div class="offerings-amount">
-                <span class="currency">XAF</span>
-                <span class="amount">{{ (currentStats.totalOffrandes) | number:'1.0-0' }}</span>
-              </div>
-              <p class="offerings-label">{{ 'STATISTICS.TOTAL_OFFERINGS' | translate }}</p>
-            </div>
-          </div>
-        </div>
 
+          <p-table
+            [value]="groupStatistics"
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[5, 10, 25, 50]"
+            [showCurrentPageReport]="true"
+            [currentPageReportTemplate]="'COMMON.PAGINATION' | translate"
+            styleClass="p-datatable-striped">
+
+            <ng-template pTemplate="header">
+              <tr>
+                <th>{{ 'STATISTICS.GROUP_MEMBER' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_ROLE' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_TOTAL_REPORTS' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_REGULARITY_RATE' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_RDQD_RATE' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_TOTAL_PRAYER' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_TOTAL_CHAPTERS' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_EVANGELIZED' | translate }}</th>
+                <th>{{ 'STATISTICS.GROUP_ALERT_LEVEL' | translate }}</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-stat>
+              <tr>
+                <td>
+                  <div class="member-cell">
+                    <span class="member-name">{{ stat.nomComplet }}</span>
+                    <span class="member-email">{{ stat.email }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="role-chip">{{ stat.roleDisplayName }}</span>
+                </td>
+                <td>{{ stat.nombreTotalCRs }}</td>
+                <td>{{ stat.tauxRegularite | number:'1.0-1' }}%</td>
+                <td>{{ stat.tauxRDQD | number:'1.0-1' }}%</td>
+                <td>{{ stat.dureeTotalePriere }}</td>
+                <td>{{ stat.totalChapitresLus }}</td>
+                <td>{{ stat.totalPersonnesEvangelisees }}</td>
+                <td>
+                  <p-tag
+                    [value]="getAlertLabel(stat.alertLevel)"
+                    [severity]="getAlertSeverity(stat.alertLevel)">
+                  </p-tag>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </section>
       } @else {
-        <!-- Empty State -->
         <div class="empty-state">
           <div class="empty-icon">
             <i class="pi pi-chart-bar"></i>
           </div>
           <h3>{{ 'STATISTICS.NO_DATA_TITLE' | translate }}</h3>
-          <p>{{ 'STATISTICS.NO_DATA_MESSAGE' | translate }}</p>
-          <button class="btn-action" (click)="loadCurrentMonth()" pRipple>
+          <p>{{ getEmptyMessageKey() | translate }}</p>
+          <button type="button" class="reload-btn" pRipple (click)="loadCurrentMonth()">
             <i class="pi pi-calendar"></i>
-            {{ 'STATISTICS.LOAD_CURRENT_MONTH' | translate }}
+            <span>{{ 'STATISTICS.LOAD_CURRENT_MONTH' | translate }}</span>
           </button>
         </div>
       }
     </div>
   `,
   styles: [`
-    .statistics-container {
+    .statistics-page {
       max-width: 1400px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
 
-    /* ===== Page Header ===== */
+    .page-header,
+    .detail-card,
+    .table-card,
+    .empty-state,
+    .stat-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+
     .page-header {
+      padding: 1.5rem;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
       gap: 1.25rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
     }
 
-    .header-left {
+    .header-main {
       display: flex;
-      align-items: center;
-    }
-
-    .header-title {
-      display: flex;
-      align-items: center;
       gap: 1rem;
+      align-items: center;
     }
 
     .title-icon {
       width: 48px;
       height: 48px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 1.25rem;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      font-size: 1.2rem;
     }
 
-    .header-title h1 {
-      margin: 0 0 0.125rem;
+    .title-copy h1 {
+      margin: 0 0 0.2rem;
       font-size: 1.5rem;
-      font-weight: 700;
-      color: #1f2937;
+      color: #111827;
     }
 
-    .header-title p {
+    .title-copy p {
       margin: 0;
       color: #6b7280;
-      font-size: 0.875rem;
+      font-size: 0.92rem;
     }
 
-    .header-right {
+    .header-actions {
       display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 0.9rem;
+      align-items: flex-end;
+      flex: 1;
     }
 
-    .period-selector {
+    .mode-switch,
+    .quick-range {
+      display: inline-flex;
+      gap: 0.35rem;
+      padding: 0.25rem;
+      border-radius: 12px;
+      background: #f3f4f6;
+    }
+
+    .mode-btn,
+    .range-btn,
+    .export-btn,
+    .reload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+    }
+
+    .mode-btn,
+    .range-btn {
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      background: transparent;
+      color: #4b5563;
+    }
+
+    .mode-btn.active,
+    .range-btn.active {
+      background: white;
+      color: #1d4ed8;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+
+    .period-controls {
       display: flex;
       gap: 0.75rem;
       align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    ::ng-deep .period-calendar {
-      .p-inputtext {
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        padding: 0.625rem 1rem;
-        font-size: 0.875rem;
-        min-width: 200px;
-        height: 44px;
-        transition: all 0.2s;
-
-        &:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-      }
-
-      .p-datepicker-trigger {
-        background: transparent;
-        border: none;
-        color: #6b7280;
-
-        &:hover {
-          background: #f3f4f6;
-          color: #6366f1;
-        }
-      }
-    }
-
-    .period-buttons {
-      display: flex;
-      background: #f3f4f6;
+    ::ng-deep .period-calendar .p-inputtext {
+      min-width: 220px;
+      height: 42px;
       border-radius: 10px;
-      padding: 4px;
-      gap: 4px;
+      border: 1px solid #d1d5db;
+      padding: 0.6rem 0.9rem;
     }
 
-    .period-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 8px;
-      background: transparent;
-      color: #6b7280;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      height: 36px;
-
-      i { font-size: 0.875rem; }
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.7);
-        color: #374151;
-      }
-
-      &.active {
-        background: white;
-        color: #6366f1;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-    }
-
-    /* ===== Export Buttons ===== */
-    .export-buttons {
+    .export-actions {
       display: flex;
       gap: 0.5rem;
     }
 
-    .btn-export {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0 1.25rem;
-      height: 44px;
-      border: none;
+    .export-btn,
+    .reload-btn {
+      height: 42px;
+      padding: 0 1rem;
       border-radius: 10px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-
-      i { font-size: 1rem; }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none !important;
-        box-shadow: none !important;
-      }
-    }
-
-    .btn-pdf {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       color: white;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-
-      &:hover:not(:disabled) {
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
-        transform: translateY(-1px);
-      }
     }
 
-    .btn-excel {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-      color: white;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-
-      &:hover:not(:disabled) {
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
-        transform: translateY(-1px);
-      }
+    .export-btn.pdf,
+    .reload-btn {
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
     }
 
-    /* ===== Stats Grid ===== */
+    .export-btn.excel {
+      background: linear-gradient(135deg, #059669 0%, #16a34a 100%);
+    }
+
+    .export-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.25rem;
-      margin-bottom: 1.5rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
     }
 
     .stat-card {
-      background: white;
-      border-radius: 16px;
-      padding: 1.5rem;
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 0.875rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e5e7eb;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.2s ease;
-
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transform: translateY(-2px);
-      }
-
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-      }
-
-      &.primary::before { background: linear-gradient(180deg, #6366f1, #8b5cf6); }
-      &.success::before { background: linear-gradient(180deg, #22c55e, #16a34a); }
-      &.info::before { background: linear-gradient(180deg, #3b82f6, #2563eb); }
-      &.warning::before { background: linear-gradient(180deg, #f59e0b, #d97706); }
+      gap: 0.75rem;
+      min-height: 158px;
     }
 
-    .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
+    .skeleton-card {
+      align-items: flex-start;
       justify-content: center;
-      font-size: 1.25rem;
-
-      .primary & { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-      .success & { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-      .info & { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-      .warning & { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
     }
 
-    .stat-info {
+    .skeleton-lines {
       display: flex;
       flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .stat-kicker {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+      font-weight: 700;
     }
 
     .stat-value {
       font-size: 2rem;
-      font-weight: 700;
-      color: #1f2937;
       line-height: 1;
+      color: #111827;
+      font-weight: 700;
     }
 
-    .stat-label {
-      font-size: 0.875rem;
+    .stat-meta {
       color: #6b7280;
-      margin-top: 0.25rem;
+      font-size: 0.88rem;
     }
 
-    .stat-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-
-      i { font-size: 0.625rem; }
-
-      &.success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #16a34a;
-      }
-    }
-
-    .stat-sub {
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .stat-progress {
-      margin-top: auto;
-    }
-
-    .progress-bar {
-      height: 6px;
+    .mini-bar {
+      height: 8px;
       background: #e5e7eb;
-      border-radius: 3px;
+      border-radius: 999px;
       overflow: hidden;
     }
 
-    .progress-fill {
+    .mini-bar-fill {
       height: 100%;
-      border-radius: 3px;
-      transition: width 0.6s ease;
-
-      &.success-fill {
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-      }
+      background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
     }
 
-    /* ===== Skeleton Loading ===== */
-    .stat-card-skeleton {
-      background: white;
-      border-radius: 16px;
-      padding: 1.5rem;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      border: 1px solid #e5e7eb;
-    }
-
-    .skeleton-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    /* ===== Charts Grid ===== */
-    .charts-grid {
+    .details-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-      margin-bottom: 1.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
     }
 
-    /* ===== Detail Sections ===== */
-    .detail-section {
-      background: white;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    .detail-card {
+      padding: 1.25rem;
+    }
+
+    .detail-card-wide {
+      grid-column: 1 / -1;
     }
 
     .section-header {
-      padding: 1rem 1.5rem;
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .section-title {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 0.625rem;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: #374151;
-
-      i {
-        color: #6366f1;
-        font-size: 1.1rem;
-      }
+      margin-bottom: 1rem;
     }
 
-    .section-body {
-      padding: 1.5rem;
+    .section-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      color: #111827;
     }
 
-    /* ===== Prayer Section ===== */
-    .prayer-total-card {
-      text-align: center;
-      padding: 1.25rem;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      border: 1px solid rgba(99, 102, 241, 0.12);
-    }
-
-    .prayer-total-value {
-      display: block;
-      font-size: 2.25rem;
-      font-weight: 700;
-      color: #6366f1;
-      line-height: 1.2;
-    }
-
-    .prayer-total-label {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-top: 0.25rem;
-    }
-
-    .prayer-breakdown {
+    .metric-list {
       display: flex;
       flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
       gap: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid #f3f4f6;
+      color: #374151;
     }
 
-    .prayer-row {
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
+    .metric-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
     }
 
-    .prayer-row-header {
+    .metric-row strong {
+      color: #111827;
+    }
+
+    .offering-block {
       display: flex;
-      align-items: center;
       gap: 0.5rem;
-    }
-
-    .prayer-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-
-      &.solo { background: #6366f1; }
-      &.couple { background: #8b5cf6; }
-      &.family { background: #a855f7; }
-    }
-
-    .prayer-name {
-      font-size: 0.875rem;
-      color: #374151;
-      flex: 1;
-    }
-
-    .prayer-time {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #1f2937;
-    }
-
-    .prayer-bar-track {
-      height: 8px;
-      background: #f3f4f6;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .prayer-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.6s ease;
-      min-width: 2px;
-
-      &.solo { background: linear-gradient(90deg, #6366f1, #818cf8); }
-      &.couple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-      &.family { background: linear-gradient(90deg, #a855f7, #c084fc); }
-    }
-
-    /* ===== Activity Section ===== */
-    .activity-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-    }
-
-    .activity-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 1.25rem 1rem;
-      background: #f9fafb;
-      border-radius: 12px;
-      border: 1px solid #f3f4f6;
-      transition: all 0.2s;
-
-      &:hover {
-        background: #f3f4f6;
-        border-color: #e5e7eb;
-      }
-    }
-
-    .activity-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 0.75rem;
-      font-size: 1.125rem;
-
-      &.study { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-      &.contacts { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-      &.invitations { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-      &.evangelism { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-    }
-
-    .activity-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1f2937;
-      line-height: 1;
-    }
-
-    .activity-label {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 0.375rem;
-    }
-
-    /* ===== Offerings Section ===== */
-    .offerings-section {
-      margin-bottom: 1.5rem;
-    }
-
-    .offerings-display {
-      text-align: center;
-      padding: 1.5rem;
-    }
-
-    .offerings-amount {
-      display: flex;
       align-items: baseline;
-      justify-content: center;
-      gap: 0.5rem;
     }
 
-    .currency {
-      font-size: 1.25rem;
+    .offering-currency {
       color: #6b7280;
-      font-weight: 500;
+      font-size: 1.1rem;
+      font-weight: 600;
     }
 
-    .amount {
-      font-size: 3rem;
+    .offering-value {
+      font-size: 2.4rem;
       font-weight: 700;
-      color: #1f2937;
-      line-height: 1;
+      color: #111827;
     }
 
-    .offerings-label {
+    .offering-caption {
       margin: 0.75rem 0 0;
       color: #6b7280;
-      font-size: 0.875rem;
     }
 
-    /* ===== Empty State ===== */
+    .table-card {
+      padding: 1.25rem;
+    }
+
+    .member-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .member-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .member-email {
+      font-size: 0.84rem;
+      color: #6b7280;
+    }
+
+    .role-chip {
+      display: inline-flex;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
     .empty-state {
+      padding: 3rem 2rem;
       text-align: center;
-      padding: 4rem 2rem;
-      background: white;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     .empty-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 20px;
-      background: rgba(99, 102, 241, 0.08);
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background: #eff6ff;
+      color: #60a5fa;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1.5rem;
-
-      i {
-        font-size: 2.5rem;
-        color: #c7d2fe;
-      }
+      font-size: 2rem;
+      margin: 0 auto 1rem;
     }
 
     .empty-state h3 {
       margin: 0 0 0.5rem;
-      color: #374151;
-      font-size: 1.125rem;
+      color: #111827;
     }
 
     .empty-state p {
-      margin: 0 0 1.5rem;
+      margin: 0 0 1.25rem;
       color: #6b7280;
     }
 
-    .btn-action {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-      transition: all 0.2s ease;
-
-      &:hover {
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
-        transform: translateY(-1px);
-      }
-    }
-
-    /* ===== Responsive ===== */
     @media (max-width: 1200px) {
-      .header-right {
-        flex-wrap: wrap;
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 1024px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .charts-grid {
+    @media (max-width: 900px) {
+      .details-grid {
         grid-template-columns: 1fr;
       }
-    }
 
-    @media (max-width: 768px) {
-      .page-header {
-        flex-direction: column;
+      .header-actions {
         align-items: stretch;
       }
 
-      .header-right {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .period-selector {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      ::ng-deep .period-calendar {
-        width: 100%;
-
-        .p-inputtext {
-          width: 100%;
-        }
-      }
-
-      .period-buttons {
-        justify-content: center;
-      }
-
-      .export-buttons {
-        justify-content: center;
-      }
-
-      .activity-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .period-controls {
+        justify-content: stretch;
       }
     }
 
@@ -972,49 +774,65 @@ import { Statistics, formatMinutesToReadable, getTotalPrayerMinutes } from '../.
         grid-template-columns: 1fr;
       }
 
-      .activity-grid {
+      .period-controls,
+      .export-actions {
+        flex-direction: column;
+      }
+
+      .mode-switch,
+      .quick-range {
+        display: grid;
         grid-template-columns: 1fr;
       }
 
-      .period-buttons {
-        flex-direction: column;
-      }
-
-      .period-btn {
-        justify-content: center;
-      }
-
-      .export-buttons {
-        flex-direction: column;
-      }
-
-      .btn-export {
-        justify-content: center;
+      ::ng-deep .period-calendar .p-inputtext {
+        min-width: 100%;
+        width: 100%;
       }
     }
   `]
 })
 export class StatisticsComponent implements OnInit {
-  private readonly facade = inject(StatisticsFacade);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly statisticsFacade = inject(StatisticsFacade);
+  private readonly subordinatesFacade = inject(SubordinatesFacade);
+  private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly translate = inject(TranslateService);
 
-  statistics$ = this.facade.statistics$;
-  loading$ = this.facade.loading$;
   currentStats: Statistics | null = null;
+  groupStatistics: SubordinateStatistics[] = [];
+  groupSummary: GroupSummary = this.createEmptyGroupSummary();
 
   dateRange: Date[] = [];
   activePeriod: 'month' | 'week' | 'custom' = 'month';
+  statsMode: StatisticsMode = 'personal';
+  canViewGroupStats = false;
+
+  isLoading = false;
   exporting = false;
-  exportFormat: 'pdf' | 'excel' = 'pdf';
+  exportFormat: ExportFormat = 'pdf';
 
   ngOnInit(): void {
-    this.statistics$.subscribe(stats => {
-      this.currentStats = stats;
-      this.cdr.detectChanges();
+    this.authService.getCurrentUser().subscribe({
+      next: user => {
+        this.canViewGroupStats = [Role.FD, Role.LEADER, Role.PASTEUR, Role.ADMIN].includes(user.role);
+        this.loadCurrentMonth();
+      },
+      error: () => this.loadCurrentMonth()
     });
-    this.loadCurrentMonth();
+  }
+
+  setMode(mode: StatisticsMode): void {
+    if (mode === 'group' && !this.canViewGroupStats) {
+      return;
+    }
+
+    if (this.statsMode === mode) {
+      return;
+    }
+
+    this.statsMode = mode;
+    this.reloadCurrentMode();
   }
 
   loadCurrentMonth(): void {
@@ -1023,7 +841,7 @@ export class StatisticsComponent implements OnInit {
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     this.dateRange = [startDate, endDate];
-    this.facade.loadPersonalStatistics(startDate, endDate).subscribe();
+    this.loadCurrentMode(startDate, endDate);
   }
 
   loadCurrentWeek(): void {
@@ -1035,31 +853,39 @@ export class StatisticsComponent implements OnInit {
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
     this.dateRange = [startDate, endDate];
-    this.facade.loadPersonalStatistics(startDate, endDate).subscribe();
+    this.loadCurrentMode(startDate, endDate);
   }
 
   onPeriodChange(): void {
     this.activePeriod = 'custom';
-    if (this.dateRange && this.dateRange.length === 2) {
-      const [startDate, endDate] = this.dateRange;
-      this.facade.loadPersonalStatistics(startDate, endDate).subscribe();
+    if (this.dateRange.length === 2) {
+      this.loadCurrentMode(this.dateRange[0], this.dateRange[1]);
     }
   }
 
-  downloadFile(format: 'pdf' | 'excel'): void {
-    if (!this.dateRange || this.dateRange.length < 2) return;
+  hasDataToExport(): boolean {
+    return this.statsMode === 'personal'
+      ? this.currentStats !== null
+      : this.groupStatistics.length > 0;
+  }
+
+  downloadFile(format: ExportFormat): void {
+    if (this.dateRange.length < 2) {
+      return;
+    }
 
     this.exporting = true;
     this.exportFormat = format;
+
     const [startDate, endDate] = this.dateRange;
+    const export$ = this.statsMode === 'group'
+      ? this.statisticsFacade.exportGroupStatistics(startDate, endDate, format)
+      : this.statisticsFacade.exportPersonalStatistics(startDate, endDate, format);
 
-    this.facade.exportPersonalStatistics(startDate, endDate, format).subscribe({
-      next: (blob: Blob) => {
+    export$.subscribe({
+      next: blob => {
         const extension = format === 'pdf' ? 'pdf' : 'xlsx';
-        const start = this.formatDateForFilename(startDate);
-        const end = this.formatDateForFilename(endDate);
-        const filename = `statistiques_personnelles_${start}_${end}.${extension}`;
-
+        const filename = this.buildExportFilename(startDate, endDate, extension);
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -1071,7 +897,7 @@ export class StatisticsComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: this.translate.instant('STATISTICS.EXPORT_SUCCESS'),
-          detail: this.translate.instant('STATISTICS.EXPORT_SUCCESS_DETAIL', {ext: extension.toUpperCase()}),
+          detail: this.translate.instant('STATISTICS.EXPORT_SUCCESS_DETAIL', { ext: extension.toUpperCase() }),
           life: 3000
         });
       },
@@ -1087,29 +913,162 @@ export class StatisticsComponent implements OnInit {
     });
   }
 
+  getTitleKey(): string {
+    return this.statsMode === 'group' ? 'STATISTICS.GROUP_TITLE' : 'STATISTICS.TITLE';
+  }
+
+  getSubtitleKey(): string {
+    return this.statsMode === 'group' ? 'STATISTICS.GROUP_SUBTITLE' : 'STATISTICS.SUBTITLE';
+  }
+
+  getPdfTooltipKey(): string {
+    return this.statsMode === 'group' ? 'STATISTICS.DOWNLOAD_GROUP_PDF' : 'STATISTICS.DOWNLOAD_PDF';
+  }
+
+  getExcelTooltipKey(): string {
+    return this.statsMode === 'group' ? 'STATISTICS.DOWNLOAD_GROUP_EXCEL' : 'STATISTICS.DOWNLOAD_EXCEL';
+  }
+
+  getEmptyMessageKey(): string {
+    return this.statsMode === 'group' ? 'STATISTICS.NO_GROUP_DATA_MESSAGE' : 'STATISTICS.NO_DATA_MESSAGE';
+  }
+
   getTotalPrayerDisplay(): string {
-    if (!this.currentStats) return '0min';
-    const totalMinutes = getTotalPrayerMinutes(this.currentStats);
-    return formatMinutesToReadable(totalMinutes);
+    if (!this.currentStats) {
+      return '0min';
+    }
+    return formatMinutesToReadable(getTotalPrayerMinutes(this.currentStats));
   }
 
   formatMinutes(minutes: number): string {
     return formatMinutesToReadable(minutes);
   }
 
-  getPrayerPercentageDisplay(type: 'solo' | 'couple' | 'family'): number {
-    if (!this.currentStats) return 0;
-    const total = getTotalPrayerMinutes(this.currentStats);
-    if (total === 0) return 0;
-
-    switch (type) {
-      case 'solo':
-        return (this.currentStats.totalPriereSeuleMinutes / total) * 100;
-      case 'couple':
-        return (this.currentStats.totalPriereCoupleMinutes / total) * 100;
-      case 'family':
-        return (this.currentStats.totalPriereAvecEnfantsMinutes / total) * 100;
+  getAlertLabel(level: string): string {
+    switch (level) {
+      case 'CRITICAL':
+        return this.translate.instant('STATISTICS.ALERT_CRITICAL');
+      case 'WARNING':
+        return this.translate.instant('STATISTICS.ALERT_WARNING');
+      default:
+        return this.translate.instant('STATISTICS.ALERT_NONE');
     }
+  }
+
+  getAlertSeverity(level: string): AlertSeverity {
+    switch (level) {
+      case 'CRITICAL':
+        return 'danger';
+      case 'WARNING':
+        return 'warn';
+      default:
+        return 'success';
+    }
+  }
+
+  private reloadCurrentMode(): void {
+    if (this.dateRange.length === 2) {
+      this.loadCurrentMode(this.dateRange[0], this.dateRange[1]);
+    } else {
+      this.loadCurrentMonth();
+    }
+  }
+
+  private loadCurrentMode(startDate: Date, endDate: Date): void {
+    this.isLoading = true;
+
+    if (this.statsMode === 'group') {
+      this.currentStats = null;
+      this.subordinatesFacade.getSubordinatesStatistics(startDate, endDate).subscribe({
+        next: stats => {
+          this.groupStatistics = stats;
+          this.groupSummary = this.buildGroupSummary(stats);
+          this.isLoading = false;
+        },
+        error: () => {
+          this.groupStatistics = [];
+          this.groupSummary = this.createEmptyGroupSummary();
+          this.isLoading = false;
+        }
+      });
+      return;
+    }
+
+    this.groupStatistics = [];
+    this.groupSummary = this.createEmptyGroupSummary();
+    this.statisticsFacade.loadPersonalStatistics(startDate, endDate).subscribe({
+      next: stats => {
+        this.currentStats = stats;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.currentStats = null;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private buildGroupSummary(stats: SubordinateStatistics[]): GroupSummary {
+    if (!stats.length) {
+      return this.createEmptyGroupSummary();
+    }
+
+    const summary = stats.reduce<GroupSummary>((summary, stat) => {
+      summary.memberCount += 1;
+      summary.totalReports += stat.nombreTotalCRs;
+      summary.averageRegularity += stat.tauxRegularite;
+      summary.averageRdqd += stat.tauxRDQD;
+      summary.totalPrayerMinutes += this.parseDurationToMinutes(stat.dureeTotalePriere);
+      summary.totalChaptersRead += stat.totalChapitresLus;
+      summary.totalEvangelized += stat.totalPersonnesEvangelisees;
+      summary.totalConfessions += stat.nombreConfessions;
+      summary.totalFasts += stat.nombreJeunes;
+
+      if (stat.alertLevel === 'CRITICAL') {
+        summary.criticalCount += 1;
+      } else if (stat.alertLevel === 'WARNING') {
+        summary.warningCount += 1;
+      }
+
+      summary.alertCount = summary.criticalCount + summary.warningCount;
+      return summary;
+    }, this.createEmptyGroupSummary());
+
+    summary.averageRegularity = summary.averageRegularity / stats.length;
+    summary.averageRdqd = summary.averageRdqd / stats.length;
+    return summary;
+  }
+
+  private createEmptyGroupSummary(): GroupSummary {
+    return {
+      memberCount: 0,
+      totalReports: 0,
+      averageRegularity: 0,
+      averageRdqd: 0,
+      totalPrayerMinutes: 0,
+      totalChaptersRead: 0,
+      totalEvangelized: 0,
+      totalConfessions: 0,
+      totalFasts: 0,
+      warningCount: 0,
+      criticalCount: 0,
+      alertCount: 0
+    };
+  }
+
+  private parseDurationToMinutes(duration: string): number {
+    const hoursMatch = duration.match(/(\d+)\s*h/);
+    const minutesMatch = duration.match(/(\d+)\s*min/);
+    const hours = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+    return (hours * 60) + minutes;
+  }
+
+  private buildExportFilename(startDate: Date, endDate: Date, extension: string): string {
+    const start = this.formatDateForFilename(startDate);
+    const end = this.formatDateForFilename(endDate);
+    const prefix = this.statsMode === 'group' ? 'statistiques_groupe' : 'statistiques_personnelles';
+    return `${prefix}_${start}_${end}.${extension}`;
   }
 
   private formatDateForFilename(date: Date): string {
